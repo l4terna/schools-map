@@ -8,6 +8,5 @@ __pycache__/
 .ruff_cache/
 .cache/
 
-data.xlsx
 *.xlsx
 *.log
