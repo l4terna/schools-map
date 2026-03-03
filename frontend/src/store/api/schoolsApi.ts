@@ -5,6 +5,7 @@ export const schoolsApi = createApi({
 	reducerPath: "schoolsApi",
 	baseQuery: fetchBaseQuery({
 		baseUrl: `${import.meta.env.VITE_API || ""}/api`,
+		credentials: "include",
 	}),
 	tagTypes: ["Districts", "Schools", "Data"],
 	endpoints: (builder) => ({
