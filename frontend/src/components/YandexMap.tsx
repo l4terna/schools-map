@@ -100,7 +100,8 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 
 	useImperativeHandle(ref, () => ({
 		panTo(c, z) {
-			mapRef.current?.setCenter(c, z, { duration: 600 });
+			const current = mapRef.current?.getZoom() ?? 0;
+			mapRef.current?.setCenter(c, Math.max(current, z), { duration: 600 });
 		},
 	}));
 
