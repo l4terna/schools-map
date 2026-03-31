@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
+import json
 import math
 
 import pandas as pd
@@ -32,30 +35,19 @@ class District:
     workers: int | None
 
 
-DISTRICT_ID_MAP: dict[str, int] = {
-    "Департамент образования Мэрии г.Грозного": 1,
-    "Департамент образования г. Аргун": 2,
-    "МУ 'Итум-Калинский РОО'": 3,
-    "МУ 'Веденский РОО'": 4,
-    "МУ 'Надтеречное РУО'": 5,
-    "МУ 'Отдел образования Серноводского муниципального района'": 6,
-    "МУ 'Отдел образования Шалинского муниципального района'": 7,
-    "МУ 'Отдел образования Шатойского муниципального района'": 8,
-    "МУ 'Шаройский районный отдел образования'": 9,
-    "МУ «Грозненское РУО»": 10,
-    "МУ «Урус-Мартановское РУО»": 11,
-    "МУ»Управление образования Гудермесского муниципального района»": 12,
-    "Наурское РУО": 13,
-    "Ахматовский": 14,
-    "Управление образования Курчалоевского муниципального района": 15,
-    "Висаитовский": 16,
-    "Шейх-Мансуровский": 17,
-    "Гудермесский": 18,
-    "Отдел образования Ачхой-Мартановского муниципального района": 19,
-    "Урус-Мартановский": 20,
-    "Управление образования Ножай-Юртовского муниципального района Чеченской Республики": 24,
-    "Управление образования Шелковского муниципального района": 25,
-}
+DISTRICTS_DATA_PATH = Path(__file__).resolve().parent / "data" / "districts.json"
+
+
+@lru_cache
+def load_district_id_map() -> dict[str, int]:
+    with DISTRICTS_DATA_PATH.open(encoding="utf-8") as source:
+        districts = json.load(source)
+
+    return {
+        item["name"]: item["id"]
+        for item in districts
+        if item.get("name") and item.get("id") is not None
+    }
 
 
 def _is_nan(value: Any) -> bool:
@@ -133,7 +125,7 @@ def _cell(row: list[Any], idx: int | None) -> Any:
     return row[idx] if idx < len(row) else None
 
 
-def _is_district_row(name: str | None, site: str | None) -> bool:
+def _is_district_row(name: str | None, site: str | None, district_id_map: dict[str, int]) -> bool:
     if not name:
         return False
 
@@ -145,15 +137,20 @@ def _is_district_row(name: str | None, site: str | None) -> bool:
     if site:
         return False
 
-    return name_stripped in DISTRICT_ID_MAP
+    return name_stripped in district_id_map
 
 
-def _payload(header: list[Any], districts: list[District], schools: list[School]) -> dict[str, Any]:
+def _payload(
+    header: list[Any],
+    districts: list[District],
+    schools: list[School],
+    district_id_map: dict[str, int],
+) -> dict[str, Any]:
     by_name: dict[str, District] = {}
     for district in districts:
         by_name[district.name] = district
 
-    for name, district_id in DISTRICT_ID_MAP.items():
+    for name, district_id in district_id_map.items():
         if name in by_name:
             current = by_name[name]
             if current.id is None:
@@ -184,7 +181,7 @@ def _payload(header: list[Any], districts: list[District], schools: list[School]
     }
 
 
-def _parse_legacy_format(df: pd.DataFrame) -> dict[str, Any]:
+def _parse_legacy_format(df: pd.DataFrame, district_id_map: dict[str, int]) -> dict[str, Any]:
     header = df.iloc[0].tolist()
 
     districts: list[District] = []
@@ -198,9 +195,9 @@ def _parse_legacy_format(df: pd.DataFrame) -> dict[str, Any]:
         name = _to_str(_cell(row, 1))
         name_stripped = name.strip() if name else None
 
-        if _is_nan(row_id) and _is_district_row(name, _to_str(_cell(row, 7))):
+        if _is_nan(row_id) and _is_district_row(name, _to_str(_cell(row, 7)), district_id_map):
             current_district = District(
-                id=DISTRICT_ID_MAP.get(name_stripped),
+                id=district_id_map.get(name_stripped),
                 name=name_stripped,
                 students=_to_int(_cell(row, 4)),
                 workers=_to_int(_cell(row, 5)),
@@ -232,12 +229,11 @@ def _parse_legacy_format(df: pd.DataFrame) -> dict[str, Any]:
             )
         )
 
-    return _payload(header, districts, schools)
+    return _payload(header, districts, schools, district_id_map)
 
 
-def _parse_new_flat_format(df: pd.DataFrame) -> dict[str, Any]:
+def _parse_new_flat_format(df: pd.DataFrame, district_id_map: dict[str, int]) -> dict[str, Any]:
     header = df.iloc[0].tolist()
-    # Column 0 is a serial number in the current file format.
     school_idx = 1
     shift_idx = 2
     capacity_idx = 3
@@ -246,8 +242,6 @@ def _parse_new_flat_format(df: pd.DataFrame) -> dict[str, Any]:
     teachers_idx = 6
     site_idx = 7
 
-    # Fixed column order for the updated format:
-    # 8 -> latitude, 9 -> longitude, 10 -> address, 11 -> district, 12 -> is_state
     lat_idx = 8
     lon_idx = 9
     address_idx = 10
@@ -311,7 +305,7 @@ def _parse_new_flat_format(df: pd.DataFrame) -> dict[str, Any]:
         district = districts_map.get(district_name)
         if district is None:
             district = District(
-                id=DISTRICT_ID_MAP.get(district_name),
+                id=district_id_map.get(district_name),
                 name=district_name,
                 students=0,
                 workers=0,
@@ -323,25 +317,25 @@ def _parse_new_flat_format(df: pd.DataFrame) -> dict[str, Any]:
         district.workers = (district.workers or 0) + (school.workers or 0)
         district.teachers = (district.teachers or 0) + (school.teachers or 0)
 
-    return _payload(header, list(districts_map.values()), schools)
+    return _payload(header, list(districts_map.values()), schools, district_id_map)
 
 
 def parse_excel(path: str) -> dict[str, Any]:
     df = pd.read_excel(path, header=None)
-    if df.empty:
-        return _payload([], [], [])
+    district_id_map = load_district_id_map()
 
-    # Determine by shape/order, not by header names.
+    if df.empty:
+        return _payload([], [], [], district_id_map)
+
     is_new_flat = df.shape[1] >= 13
 
     if is_new_flat:
-        return _parse_new_flat_format(df)
+        return _parse_new_flat_format(df, district_id_map)
 
-    return _parse_legacy_format(df)
+    return _parse_legacy_format(df, district_id_map)
 
 
 if __name__ == "__main__":
-    import json
     import sys
 
     source = sys.argv[1] if len(sys.argv) > 1 else "data.xlsx"

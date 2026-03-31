@@ -5,19 +5,13 @@ from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 
 import hashlib
-import os
 import shutil
 
+from config import get_admin_settings, get_excel_path
 from parser import parse_excel
 
-
-EXCEL_PATH = "database/data.xlsx"
-
 COOKIE_NAME = "admin_session"
-COOKIE_MAX_AGE = 60 * 60 * 24 * 30 # 30 дней
-ADMIN_LOGIN = "admin"
-ADMIN_PASSWORD = "admin"
-TOKEN_SALT = "hype"
+COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 дней
 
 app = FastAPI(title="Schools Map API")
 
@@ -33,21 +27,22 @@ async def admin_guard(request: Request, call_next):
         if request.url.path in {"/api/admin/login", "/api/admin/logout"}:
             return await call_next(request)
 
+        settings = get_admin_settings()
         token = request.cookies.get(COOKIE_NAME)
-        
-        if token != _make_token(ADMIN_LOGIN, ADMIN_PASSWORD):
+
+        if token != _make_token(settings.admin_login, settings.admin_password):
             return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
 
     return await call_next(request)
 
 
 def _load():
-    return parse_excel(EXCEL_PATH)
+    return parse_excel(get_excel_path())
 
 
 def _make_token(login: str, password: str) -> str:
-    payload = f"{login}:{password}:{TOKEN_SALT}".encode("utf-8")
-    
+    payload = f"{login}:{password}:{get_admin_settings().admin_token_salt}".encode("utf-8")
+
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -93,7 +88,9 @@ def district_detail(district_id: int):
 
 @app.post("/api/admin/login")
 def login(payload: LoginPayload, response: Response):
-    if payload.login != ADMIN_LOGIN or payload.password != ADMIN_PASSWORD:
+    settings = get_admin_settings()
+
+    if payload.login != settings.admin_login or payload.password != settings.admin_password:
         return JSONResponse(status_code=401, content={"detail": "Invalid credentials"})
 
     response.set_cookie(
@@ -122,27 +119,29 @@ def upload_excel(file: UploadFile = File(...)):
             content={"detail": "Only .xlsx files are supported"},
         )
 
-    tmp_path = f"{EXCEL_PATH}.tmp"
+    excel_path = get_excel_path()
+    tmp_path = excel_path.with_name(f"{excel_path.name}.tmp")
     with open(tmp_path, "wb") as out_file:
         shutil.copyfileobj(file.file, out_file)
 
-    os.replace(tmp_path, EXCEL_PATH)
+    tmp_path.replace(excel_path)
 
     return {"status": "ok"}
 
 
 @app.get("/api/admin/data/download")
 def download_excel():
-    if not os.path.exists(EXCEL_PATH):
+    excel_path = get_excel_path()
+    if not excel_path.exists():
         return JSONResponse(status_code=404, content={"detail": "Not found"})
 
     return FileResponse(
-        EXCEL_PATH,
+        excel_path,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        filename=os.path.basename(EXCEL_PATH),
+        filename=excel_path.name,
     )
 
 
 @app.get("/api/admin/data/exists")
 def excel_exists():
-    return {"exists": os.path.exists(EXCEL_PATH)}
+    return {"exists": get_excel_path().exists()}
