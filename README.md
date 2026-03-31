@@ -40,6 +40,6 @@ Frontend default URL: `http://127.0.0.1:5173`.
 
 ## Admin Credentials (current)
 - login: `admin`
-- password: `admin`
+- password: `change-me`
 
 Data file: `backend/database/data.xlsx`.
