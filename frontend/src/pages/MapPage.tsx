@@ -29,7 +29,21 @@ export function MapPage() {
 
 	/* ---- callbacks ---- */
 
-	const handleSelectDistrict = useCallback(
+	const handleSelectDistrictFromSidebar = useCallback(
+		(id: number) => {
+			setSelectedDistrictId(id);
+			setSelectedSchool(null);
+
+			const district = districts?.find((d) => d.id === id);
+			if (district) {
+				const geo = DISTRICT_GEO[district.name];
+				if (geo) mapRef.current?.panTo(geo.center, geo.zoom, true);
+			}
+		},
+		[districts],
+	);
+
+	const handleSelectDistrictFromMap = useCallback(
 		(id: number) => {
 			setSelectedDistrictId(id);
 			setSelectedSchool(null);
@@ -46,7 +60,7 @@ export function MapPage() {
 	const handleBack = useCallback(() => {
 		setSelectedDistrictId(null);
 		setSelectedSchool(null);
-		mapRef.current?.panTo(CHECHNYA_CENTER, CHECHNYA_ZOOM);
+		mapRef.current?.panTo(CHECHNYA_CENTER, CHECHNYA_ZOOM, true);
 	}, []);
 
 	const handleSelectSchool = useCallback((school: School) => {
@@ -60,7 +74,7 @@ export function MapPage() {
 		setSelectedSchool(null);
 		if (selectedDistrict) {
 			const geo = DISTRICT_GEO[selectedDistrict.name];
-			if (geo) mapRef.current?.panTo(geo.center, geo.zoom);
+			if (geo) mapRef.current?.panTo(geo.center, geo.zoom, true);
 		}
 	}, [selectedDistrict]);
 
@@ -73,7 +87,7 @@ export function MapPage() {
 				selectedSchool={selectedSchool}
 				loading={loadingDistricts}
 				loadingSchools={loadingSchools}
-				onSelectDistrict={handleSelectDistrict}
+				onSelectDistrict={handleSelectDistrictFromSidebar}
 				onSelectSchool={handleSelectSchool}
 				onBack={handleBack}
 				onBackToSchools={handleBackToSchools}
@@ -87,7 +101,7 @@ export function MapPage() {
 				selectedSchoolName={selectedSchool?.name ?? null}
 				onSchoolClick={handleSelectSchool}
 				districts={districts ?? []}
-				onDistrictClick={handleSelectDistrict}
+				onDistrictClick={handleSelectDistrictFromMap}
 				selectedDistrictId={selectedDistrictId}
 			/>
 		</div>

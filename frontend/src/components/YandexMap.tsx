@@ -12,7 +12,7 @@ import republicBorderJSON from "@/data/republic-border.geojson?raw";
 import type { District, School } from "@/types";
 
 export interface YandexMapHandle {
-	panTo(center: [number, number], zoom: number): void;
+	panTo(center: [number, number], zoom: number, force?: boolean): void;
 }
 
 interface Props {
@@ -99,9 +99,10 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 	}, []);
 
 	useImperativeHandle(ref, () => ({
-		panTo(c, z) {
+		panTo(c, z, force) {
 			const current = mapRef.current?.getZoom() ?? 0;
-			mapRef.current?.setCenter(c, Math.max(current, z), { duration: 600 });
+			const targetZoom = force ? z : Math.max(current, z);
+			mapRef.current?.setCenter(c, targetZoom, { duration: 600 });
 		},
 	}));
 
