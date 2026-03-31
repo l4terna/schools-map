@@ -36,6 +36,6 @@ Main API endpoints:
 
 Admin credentials (current):
 - login: admin
-- password: admin
+- password: change-me
 
 Data file: backend/database/data.xlsx
