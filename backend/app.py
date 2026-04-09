@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 import hashlib
 import shutil
+import time
 
 from config import get_admin_settings, get_excel_path
 from parser import parse_excel
@@ -14,6 +15,8 @@ COOKIE_NAME = "admin_session"
 COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 дней
 
 app = FastAPI(title="Schools Map API")
+
+_last_upload_ts: int = int(time.time())
 
 
 @app.exception_handler(Exception)
@@ -126,6 +129,9 @@ def upload_excel(file: UploadFile = File(...)):
 
     tmp_path.replace(excel_path)
 
+    global _last_upload_ts
+    _last_upload_ts = int(time.time())
+
     return {"status": "ok"}
 
 
@@ -145,3 +151,25 @@ def download_excel():
 @app.get("/api/admin/data/exists")
 def excel_exists():
     return {"exists": get_excel_path().exists()}
+
+
+@app.get("/api/data/version")
+def data_version():
+    if not get_excel_path().exists():
+        return JSONResponse(status_code=404, content={"detail": "No data"})
+
+    return {"version": _last_upload_ts}
+
+
+@app.get("/api/data/all")
+def data_all():
+    try:
+        payload = _load()
+    except FileNotFoundError:
+        return JSONResponse(status_code=503, content={"detail": "Service unavailable"})
+
+    return {
+        "version": _last_upload_ts,
+        "districts": payload["districts"],
+        "schools": payload["schools"],
+    }

@@ -8,5 +8,6 @@ __pycache__/
 .ruff_cache/
 .cache/
 .env
+.omc 
 
 *.log
