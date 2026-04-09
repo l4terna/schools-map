@@ -19,6 +19,18 @@ export const schoolsApi = createApi({
 			providesTags: (_res, _err, id) => [{ type: "Schools", id }],
 		}),
 
+		getDataVersion: builder.query<{ version: number }, void>({
+			query: () => "/data/version",
+		}),
+
+		getDataAll: builder.query<
+			{ version: number; districts: District[]; schools: School[] },
+			void
+		>({
+			query: () => "/data/all",
+			providesTags: ["Districts", "Schools"],
+		}),
+
 		login: builder.mutation<{ status: string }, LoginPayload>({
 			query: (body) => ({ url: "/admin/login", method: "POST", body }),
 		}),
@@ -46,6 +58,8 @@ export const schoolsApi = createApi({
 export const {
 	useGetDistrictsQuery,
 	useGetSchoolsByDistrictQuery,
+	useGetDataVersionQuery,
+	useGetDataAllQuery,
 	useLoginMutation,
 	useLogoutMutation,
 	useCheckDataExistsQuery,

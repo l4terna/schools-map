@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
 	useGetDistrictsQuery,
 	useGetSchoolsByDistrictQuery,
@@ -7,11 +8,14 @@ import { YandexMap, type YandexMapHandle } from "@/components/YandexMap";
 import { Sidebar } from "@/components/Sidebar";
 import { DISTRICT_GEO, CHECHNYA_CENTER, CHECHNYA_ZOOM } from "@/data/districts";
 import type { School } from "@/types";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export function MapPage() {
 	const mapRef = useRef<YandexMapHandle>(null);
+	const [searchParams] = useSearchParams();
+	const districtParam = searchParams.get("district");
 	const [selectedDistrictId, setSelectedDistrictId] = useState<number | null>(
-		null,
+		districtParam ? Number(districtParam) : null,
 	);
 	const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
 
@@ -26,9 +30,16 @@ export function MapPage() {
 		selectedDistrictId !== null
 			? (districts?.find((d) => d.id === selectedDistrictId) ?? null)
 			: null;
-
-	/* ---- callbacks ---- */
-
+	useEffect(() => {
+		if (districtParam && districts) {
+			const id = Number(districtParam);
+			const district = districts.find((d) => d.id === id);
+			if (district) {
+				const geo = DISTRICT_GEO[district.name];
+				if (geo) mapRef.current?.panTo(geo.center, geo.zoom);
+			}
+		}
+	}, [districtParam, districts]);
 	const handleSelectDistrictFromSidebar = useCallback(
 		(id: number) => {
 			setSelectedDistrictId(id);
@@ -79,7 +90,22 @@ export function MapPage() {
 	}, [selectedDistrict]);
 
 	return (
-		<div className="relative h-screen">
+		<div className="relative h-screen bg-neutral-100 dark:bg-neutral-800">
+			<div className="absolute right-4 top-4 z-20 flex gap-2">
+				<Link
+					to="/"
+					className="inline-flex items-center gap-1.5 rounded-xl bg-white dark:bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-700 dark:text-neutral-300 shadow-lg dark:shadow-neutral-900/40 transition hover:bg-neutral-50 dark:hover:bg-neutral-700 active:scale-95"
+				>
+					Главная
+				</Link>
+				<Link
+					to="/admin"
+					className="inline-flex items-center gap-1.5 rounded-xl bg-white dark:bg-neutral-800 px-4 py-2 text-sm font-semibold text-neutral-700 dark:text-neutral-300 shadow-lg dark:shadow-neutral-900/40 transition hover:bg-neutral-50 dark:hover:bg-neutral-700 active:scale-95"
+				>
+					Админ-панель
+				</Link>
+				<ThemeToggle />
+			</div>
 			<Sidebar
 				districts={districts ?? []}
 				selectedDistrict={selectedDistrict}

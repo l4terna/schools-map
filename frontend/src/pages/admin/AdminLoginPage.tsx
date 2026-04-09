@@ -21,12 +21,12 @@ export function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center px-4">
+    <div className="flex min-h-[60vh] items-center justify-center bg-neutral-50 dark:bg-neutral-900 px-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-4 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm"
+        className="w-full max-w-sm space-y-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-6 shadow-sm dark:shadow-neutral-900/30"
       >
-        <h1 className="text-center text-xl font-semibold text-neutral-900">
+        <h1 className="text-center text-xl font-semibold text-neutral-900 dark:text-neutral-100">
           Вход в панель
         </h1>
 
@@ -35,7 +35,7 @@ export function AdminLoginPage() {
           placeholder="Логин"
           value={login}
           onChange={(e) => setLogin(e.target.value)}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+          className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 outline-none focus:border-blue-500 placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
           required
         />
 
@@ -44,7 +44,7 @@ export function AdminLoginPage() {
           placeholder="Пароль"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+          className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 outline-none focus:border-blue-500 placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
           required
         />
 

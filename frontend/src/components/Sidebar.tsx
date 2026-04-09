@@ -28,7 +28,7 @@ export function Sidebar({
 	onBackToSchools,
 }: SidebarProps) {
 	return (
-		<aside className="absolute bottom-4 left-4 top-4 z-10 flex w-95 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_0_40px_rgba(0,0,0,0.08)]">
+		<aside className="absolute bottom-4 left-4 top-4 z-10 flex w-95 flex-col overflow-hidden rounded-2xl bg-white dark:bg-neutral-800 shadow-[0_0_40px_rgba(0,0,0,0.08)] dark:shadow-[0_0_40px_rgba(0,0,0,0.3)]">
 			{loading ? (
 				<div className="flex flex-1 items-center justify-center">
 					<Loading />
@@ -70,7 +70,7 @@ function SearchInput({
 	return (
 		<div className="relative">
 			<svg
-				className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400"
+				className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500"
 				fill="none"
 				stroke="currentColor"
 				viewBox="0 0 24 24"
@@ -87,7 +87,7 @@ function SearchInput({
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={placeholder}
-				className="w-full rounded-2xl bg-neutral-100 py-3 pl-11 pr-4 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:bg-neutral-50 focus:ring-2 focus:ring-blue-500/20"
+				className="w-full rounded-2xl bg-neutral-100 dark:bg-neutral-700 py-3 pl-11 pr-4 text-sm text-neutral-900 dark:text-neutral-100 outline-none transition placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:bg-neutral-50 dark:focus:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
 			/>
 		</div>
 	);
@@ -103,7 +103,7 @@ function BackButton({
 	return (
 		<button
 			onClick={onClick}
-			className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-blue-600 transition active:scale-95 hover:bg-blue-50"
+			className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 transition active:scale-95 hover:bg-blue-50 dark:hover:bg-blue-900/30"
 		>
 			<svg
 				className="h-4 w-4"
@@ -132,7 +132,6 @@ function DistrictList({
 }) {
 	const [query, setQuery] = useState("");
 	const q = query.toLowerCase();
-
 	const valid = districts.filter((d) => d.id !== null);
 	const filtered = valid.filter((d) => {
 		const label = DISTRICT_GEO[d.name]?.shortName ?? d.name;
@@ -141,8 +140,8 @@ function DistrictList({
 
 	return (
 		<>
-			<div className="shrink-0 border-b border-neutral-100 px-5 pb-4 pt-5">
-				<h2 className="text-lg font-semibold tracking-tight text-neutral-900">
+			<div className="shrink-0 border-b border-neutral-100 dark:border-neutral-700 px-5 pb-4 pt-5">
+				<h2 className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
 					Районы ({valid.length})
 				</h2>
 				<div className="mt-4">
@@ -153,11 +152,10 @@ function DistrictList({
 					/>
 				</div>
 			</div>
-
 			<div className="flex-1 overflow-y-auto px-5 py-4">
 				<div className="space-y-2">
 					{filtered.length === 0 ? (
-						<p className="py-8 text-center text-sm text-neutral-400">
+						<p className="py-8 text-center text-sm text-neutral-400 dark:text-neutral-500">
 							Ничего не найдено
 						</p>
 					) : (
@@ -166,9 +164,9 @@ function DistrictList({
 							const color = geo?.color ?? "#3b82f6";
 							return (
 								<button
-									key={d.id}
+									key={`${d.id}-${d.name}`}
 									onClick={() => onSelect(d.id!)}
-									className="group flex w-full cursor-pointer items-center gap-3.5 rounded-2xl bg-neutral-50 p-4 text-left transition active:scale-[0.98] hover:bg-neutral-100"
+									className="group flex w-full cursor-pointer items-center gap-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-900 p-4 text-left transition active:scale-[0.98] hover:bg-neutral-100 dark:hover:bg-neutral-700"
 								>
 									<div
 										className="h-10 w-10 shrink-0 rounded-xl"
@@ -185,10 +183,10 @@ function DistrictList({
 										</div>
 									</div>
 									<div className="min-w-0 flex-1">
-										<p className="font-medium tracking-tight text-neutral-900">
+										<p className="font-medium tracking-tight text-neutral-900 dark:text-neutral-100">
 											{geo?.shortName ?? d.name}
 										</p>
-										<div className="mt-1 flex gap-3 text-xs text-neutral-500">
+										<div className="mt-1 flex gap-3 text-xs text-neutral-500 dark:text-neutral-400">
 											{d.students != null && (
 												<span>{d.students.toLocaleString("ru")} уч.</span>
 											)}
@@ -198,7 +196,7 @@ function DistrictList({
 										</div>
 									</div>
 									<svg
-										className="h-4 w-4 shrink-0 text-neutral-300 transition group-hover:text-neutral-500"
+										className="h-4 w-4 shrink-0 text-neutral-300 dark:text-neutral-600 transition group-hover:text-neutral-500 dark:group-hover:text-neutral-400"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -235,21 +233,18 @@ function DistrictDetail({
 }) {
 	const [query, setQuery] = useState("");
 	const q = query.toLowerCase();
-
 	const filtered = schools.filter(
 		(s) =>
 			s.name.toLowerCase().includes(q) ||
 			(s.address && s.address.toLowerCase().includes(q)),
 	);
-
 	const geo = DISTRICT_GEO[district.name];
 	const color = geo?.color ?? "#3b82f6";
 
 	return (
 		<>
-			<div className="shrink-0 border-b border-neutral-100 px-5 pb-4 pt-5">
+			<div className="shrink-0 border-b border-neutral-100 dark:border-neutral-700 px-5 pb-4 pt-5">
 				<BackButton onClick={onBack} label="Все районы" />
-
 				<div className="mt-3 flex items-center gap-3">
 					<div
 						className="h-10 w-10 shrink-0 rounded-xl"
@@ -265,11 +260,10 @@ function DistrictDetail({
 							/>
 						</div>
 					</div>
-					<h2 className="text-lg font-semibold tracking-tight text-neutral-900">
+					<h2 className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
 						{geo?.shortName ?? district.name}
 					</h2>
 				</div>
-
 				<div className="mt-5 grid grid-cols-3 gap-2">
 					<StatCard
 						label="Обучающихся"
@@ -277,7 +271,7 @@ function DistrictDetail({
 						color="#3b82f6"
 					/>
 					<StatCard
-						label="Учителей"
+						label="Педагогов"
 						value={district.teachers}
 						color="#8b5cf6"
 					/>
@@ -287,9 +281,8 @@ function DistrictDetail({
 						color="#f59e0b"
 					/>
 				</div>
-
 				<div className="mt-5">
-					<h3 className="text-sm font-semibold tracking-tight text-neutral-900">
+					<h3 className="text-sm font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
 						Школы{!loadingSchools && ` (${schools.length})`}
 					</h3>
 					{!loadingSchools && schools.length > 0 && (
@@ -303,18 +296,19 @@ function DistrictDetail({
 					)}
 				</div>
 			</div>
-
 			<div className="flex-1 overflow-y-auto px-5 py-4">
 				{loadingSchools ? (
 					<div className="flex justify-center py-6">
 						<div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-200 border-t-blue-600" />
 					</div>
 				) : schools.length === 0 ? (
-					<p className="text-sm text-neutral-400">Школы не найдены</p>
+					<p className="text-sm text-neutral-400 dark:text-neutral-500">
+						Школы не найдены
+					</p>
 				) : (
 					<div className="space-y-2">
 						{filtered.length === 0 ? (
-							<p className="py-8 text-center text-sm text-neutral-400">
+							<p className="py-8 text-center text-sm text-neutral-400 dark:text-neutral-500">
 								Ничего не найдено
 							</p>
 						) : (
@@ -322,9 +316,9 @@ function DistrictDetail({
 								<button
 									key={i}
 									onClick={() => onSelectSchool(s)}
-									className="group flex w-full cursor-pointer items-center gap-3 rounded-2xl bg-neutral-50 p-3.5 text-left transition active:scale-[0.98] hover:bg-neutral-100"
+									className="group flex w-full cursor-pointer items-center gap-3 rounded-2xl bg-neutral-50 dark:bg-neutral-900 p-3.5 text-left transition active:scale-[0.98] hover:bg-neutral-100 dark:hover:bg-neutral-700"
 								>
-									<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+									<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
 										<svg
 											className="h-4 w-4"
 											fill="none"
@@ -346,17 +340,17 @@ function DistrictDetail({
 										</svg>
 									</div>
 									<div className="min-w-0 flex-1">
-										<p className="text-sm font-medium tracking-tight text-neutral-900">
+										<p className="text-sm font-medium tracking-tight text-neutral-900 dark:text-neutral-100">
 											{s.name}
 										</p>
 										{s.address && (
-											<p className="mt-0.5 truncate text-xs text-neutral-500">
+											<p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
 												{s.address}
 											</p>
 										)}
 									</div>
 									<svg
-										className="h-4 w-4 shrink-0 text-neutral-300 transition group-hover:text-neutral-500"
+										className="h-4 w-4 shrink-0 text-neutral-300 dark:text-neutral-600 transition group-hover:text-neutral-500 dark:group-hover:text-neutral-400"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -393,19 +387,18 @@ function SchoolDetail({
 
 	return (
 		<>
-			<div className="shrink-0 border-b border-neutral-100 px-5 pb-4 pt-5">
+			<div className="shrink-0 border-b border-neutral-100 dark:border-neutral-700 px-5 pb-4 pt-5">
 				<BackButton onClick={onBack} label="К списку школ" />
-				<h2 className="mt-3 text-lg font-semibold tracking-tight text-neutral-900">
+				<h2 className="mt-3 text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
 					{school.name}
 				</h2>
 				{school.is_state && (
-					<span className="mt-2.5 inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+					<span className="mt-2.5 inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/30 px-3 py-1 text-xs font-medium text-green-700 dark:text-green-400">
 						<span className="h-1.5 w-1.5 rounded-full bg-green-500" />
 						Государственная
 					</span>
 				)}
 			</div>
-
 			<div className="flex-1 overflow-y-auto px-5 py-4">
 				<div className="space-y-2">
 					{school.address && (
@@ -430,10 +423,9 @@ function SchoolDetail({
 							value={school.address}
 						/>
 					)}
-
 					{siteUrl && (
-						<div className="flex items-start gap-3 rounded-2xl bg-neutral-50 p-4">
-							<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-500">
+						<div className="flex items-start gap-3 rounded-2xl bg-neutral-50 dark:bg-neutral-900 p-4">
+							<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400">
 								<svg
 									className="h-4 w-4"
 									fill="none"
@@ -455,19 +447,20 @@ function SchoolDetail({
 								</svg>
 							</div>
 							<div className="min-w-0 flex-1">
-								<p className="text-xs font-medium text-neutral-400">Сайт</p>
+								<p className="text-xs font-medium text-neutral-400 dark:text-neutral-500">
+									Сайт
+								</p>
 								<a
 									href={siteUrl}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="mt-0.5 block cursor-pointer truncate text-sm font-medium text-blue-600 hover:underline"
+									className="mt-0.5 block cursor-pointer truncate text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
 								>
 									{school.site}
 								</a>
 							</div>
 						</div>
 					)}
-
 					{(school.shift != null || school.capacity != null) && (
 						<div className="grid grid-cols-2 gap-2">
 							{school.shift != null && (
@@ -486,7 +479,6 @@ function SchoolDetail({
 							)}
 						</div>
 					)}
-
 					{(school.students != null ||
 						school.teachers != null ||
 						school.workers != null) && (
@@ -514,6 +506,22 @@ function SchoolDetail({
 							)}
 						</div>
 					)}
+					<div className="grid grid-cols-2 gap-2">
+						<MiniStat label="Обуч. во 2 смену" value="—" color="#6b7280" />
+						<MiniStat label="Зданий" value="—" color="#6b7280" />
+					</div>
+					<div className="grid grid-cols-2 gap-2">
+						<MiniStat label="Треб. ремонта" value="—" color="#6b7280" />
+						<MiniStat label="Аварийное" value="—" color="#6b7280" />
+					</div>
+					<div className="grid grid-cols-2 gap-2">
+						<MiniStat label="Отремонтирована" value="—" color="#6b7280" />
+						<MiniStat label="Строится" value="—" color="#6b7280" />
+					</div>
+					<div className="grid grid-cols-2 gap-2">
+						<MiniStat label="ШКОН" value="—" color="#6b7280" />
+						<MiniStat label="Необъективность" value="—" color="#6b7280" />
+					</div>
 				</div>
 			</div>
 		</>
@@ -530,11 +538,13 @@ function StatCard({
 	color: string;
 }) {
 	return (
-		<div className="rounded-2xl bg-neutral-50 px-3 py-3 text-center">
+		<div className="rounded-2xl bg-neutral-50 dark:bg-neutral-900 px-3 py-3 text-center">
 			<p className="text-lg font-semibold tracking-tight" style={{ color }}>
 				{value != null ? value.toLocaleString("ru") : "—"}
 			</p>
-			<p className="mt-0.5 text-[11px] font-medium text-neutral-400">{label}</p>
+			<p className="mt-0.5 text-[11px] font-medium text-neutral-400 dark:text-neutral-500">
+				{label}
+			</p>
 		</div>
 	);
 }
@@ -549,11 +559,13 @@ function MiniStat({
 	color: string;
 }) {
 	return (
-		<div className="rounded-2xl bg-neutral-50 px-3 py-3 text-center">
+		<div className="rounded-2xl bg-neutral-50 dark:bg-neutral-900 px-3 py-3 text-center">
 			<p className="text-base font-semibold tracking-tight" style={{ color }}>
 				{value}
 			</p>
-			<p className="mt-0.5 text-[11px] font-medium text-neutral-400">{label}</p>
+			<p className="mt-0.5 text-[11px] font-medium text-neutral-400 dark:text-neutral-500">
+				{label}
+			</p>
 		</div>
 	);
 }
@@ -570,8 +582,8 @@ function InfoCard({
 	value: string;
 }) {
 	return (
-		<div className="flex items-start gap-3 rounded-2xl bg-neutral-50 p-4">
-			<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
+		<div className="flex items-start gap-3 rounded-2xl bg-neutral-50 dark:bg-neutral-900 p-4">
+			<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400">
 				<svg
 					className="h-4 w-4"
 					fill="none"
@@ -583,8 +595,12 @@ function InfoCard({
 				</svg>
 			</div>
 			<div className="min-w-0 flex-1">
-				<p className="text-xs font-medium text-neutral-400">{label}</p>
-				<p className="mt-0.5 text-sm font-medium text-neutral-800">{value}</p>
+				<p className="text-xs font-medium text-neutral-400 dark:text-neutral-500">
+					{label}
+				</p>
+				<p className="mt-0.5 text-sm font-medium text-neutral-800 dark:text-neutral-200">
+					{value}
+				</p>
 			</div>
 		</div>
 	);

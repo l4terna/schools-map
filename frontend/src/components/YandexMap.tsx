@@ -320,8 +320,8 @@ ${school.workers != null ? `Работников: ${school.workers.toLocaleStrin
 	return (
 		<div ref={containerRef} className="h-full w-full">
 			{!ready && (
-				<div className="flex h-full items-center justify-center bg-neutral-100">
-					<div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-blue-600" />
+				<div className="flex h-full items-center justify-center bg-neutral-100 dark:bg-neutral-800">
+					<div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 dark:border-neutral-600 border-t-blue-600" />
 				</div>
 			)}
 		</div>
