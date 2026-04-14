@@ -15,30 +15,25 @@ export default defineConfig(({ mode }) => {
 			VitePWA({
 				registerType: "autoUpdate",
 				workbox: {
-					globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+					skipWaiting: true,
+					clientsClaim: true,
+					globPatterns: [
+						"**/*.{js,css,html,ico,png,svg,woff2,json,webmanifest}",
+					],
+					navigateFallback: "index.html",
+					navigateFallbackDenylist: [/^\/api\//],
 					runtimeCaching: [
 						{
-							urlPattern: /\/api\/data\/version$/,
+							urlPattern: /^\/api\//,
 							handler: "NetworkFirst",
 							options: {
-								cacheName: "data-version",
-								networkTimeoutSeconds: 3,
-							},
-						},
-						{
-							urlPattern: /\/api\/data\/all$/,
-							handler: "NetworkFirst",
-							options: {
-								cacheName: "data-all",
-								networkTimeoutSeconds: 10,
-							},
-						},
-						{
-							urlPattern: /\/api\/districts/,
-							handler: "NetworkFirst",
-							options: {
-								cacheName: "api-districts",
+								cacheName: "api-cache",
 								networkTimeoutSeconds: 5,
+								expiration: {
+									maxEntries: 50,
+									maxAgeSeconds: 60 * 60 * 24,
+								},
+								cacheableResponse: { statuses: [0, 200] },
 							},
 						},
 					],

@@ -9,9 +9,27 @@ import { SchoolTable } from "@/components/dashboard/SchoolTable";
 import { ChechenGrid } from "@/components/dashboard/ChechenGrid";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
+function SortArrow({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
+	return (
+		<svg
+			className={`ml-1 inline h-3 w-3 transition ${active ? "opacity-100" : "opacity-30"}`}
+			viewBox="0 0 10 12"
+			fill="currentColor"
+		>
+			{dir === "asc" || !active ? (
+				<path d="M5 0L10 6H0z" />
+			) : (
+				<path d="M5 12L0 6h10z" />
+			)}
+		</svg>
+	);
+}
+
 export function DashboardPage() {
 	const {
 		isLoading,
+		showOffline,
+		noData,
 		rows,
 		sorted,
 		totals,
@@ -22,10 +40,46 @@ export function DashboardPage() {
 		setDistrictQuery,
 		schoolQuery,
 		setSchoolQuery,
+		districtSort,
+		toggleDistrictSort,
+		schoolSort,
+		toggleSchoolSort,
 	} = useDashboardData();
 	const [expanded, setExpanded] = useState(false);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
 	const [tab, setTab] = useState<"districts" | "republic">("districts");
+
+	if (noData) {
+		return (
+			<div className="flex h-screen flex-col items-center justify-center gap-4 bg-neutral-50 dark:bg-neutral-900 px-4 text-center">
+				<svg
+					className="h-16 w-16 text-neutral-300 dark:text-neutral-600"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						strokeWidth={1.5}
+						d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+					/>
+				</svg>
+				<h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-200">
+					Не удалось загрузить данные
+				</h2>
+				<p className="max-w-sm text-sm text-neutral-500 dark:text-neutral-400">
+					Проверьте подключение к интернету и попробуйте снова.
+				</p>
+				<button
+					onClick={() => window.location.reload()}
+					className="mt-2 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 active:scale-95"
+				>
+					Повторить
+				</button>
+			</div>
+		);
+	}
 
 	if (isLoading) {
 		return (
@@ -35,9 +89,29 @@ export function DashboardPage() {
 		);
 	}
 
+	const offlineBanner = showOffline ? (
+		<div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800 px-4 py-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+			<svg
+				className="h-4 w-4 shrink-0"
+				fill="none"
+				stroke="currentColor"
+				viewBox="0 0 24 24"
+			>
+				<path
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					strokeWidth={2}
+					d="M18.364 5.636a9 9 0 010 12.728M5.636 18.364a9 9 0 010-12.728"
+				/>
+			</svg>
+			Нет подключения — данные из кэша
+		</div>
+	) : null;
+
 	if (selected) {
 		return (
 			<div className="flex flex-col bg-neutral-50 dark:bg-neutral-900 lg:h-screen">
+				{offlineBanner}
 				<div className="mx-auto flex min-h-0 w-full max-w-screen-sm flex-1 flex-col lg:mx-0 lg:max-w-none lg:flex-row">
 					<div className="flex min-w-0 flex-col p-4 lg:min-h-0 lg:flex-1 lg:p-6">
 						<div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4">
@@ -86,7 +160,11 @@ export function DashboardPage() {
 								</span>
 							</div>
 							<div className="flex-1 overflow-auto">
-								<SchoolTable schools={sortedSchools} />
+								<SchoolTable
+									schools={sortedSchools}
+									sort={schoolSort}
+									onToggleSort={toggleSchoolSort}
+								/>
 							</div>
 						</div>
 					</div>
@@ -143,7 +221,7 @@ export function DashboardPage() {
 								/>
 							</div>
 						</div>
-						<div className="mt-2">
+						<div className="mt-2 hidden lg:block">
 							<Link
 								to={`/map?district=${selected.district.id}`}
 								className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 active:scale-[0.97]"
@@ -172,6 +250,7 @@ export function DashboardPage() {
 
 	return (
 		<div className="flex flex-col bg-neutral-50 dark:bg-neutral-900 lg:h-screen">
+			{offlineBanner}
 			{/* Mobile top nav */}
 			<div className="mx-auto flex w-full max-w-screen-sm items-center gap-2 px-4 pt-4 md:hidden lg:mx-0 lg:max-w-none">
 				<Link
@@ -294,12 +373,21 @@ export function DashboardPage() {
 													<span className="text-xs font-medium text-neutral-400 dark:text-neutral-500">
 														{i + 1}
 													</span>
-													<span className="h-2 w-2 rounded-full bg-neutral-300 dark:bg-neutral-600" />
 												</div>
 												<div className="min-w-0 flex-1">
-													<p className="truncate text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-														{r.shortName}
-													</p>
+													<div className="flex items-center gap-1.5">
+														<span
+															title={
+																r.schools.some((s) => s.a_school_with_bias)
+																	? "Есть школа с необъективностью"
+																	: "Нет школ с необъективностью"
+															}
+															className={`h-2 w-2 shrink-0 rounded-full ${r.schools.some((s) => s.a_school_with_bias) ? "bg-rose-500" : "bg-emerald-500"}`}
+														/>
+														<p className="truncate text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+															{r.shortName}
+														</p>
+													</div>
 													<div className="mt-1.5">
 														<FillBar value={r.fillRate} />
 													</div>
@@ -424,49 +512,205 @@ export function DashboardPage() {
 										<th className="w-12 py-3 pl-5 text-left text-[11px] font-semibold uppercase tracking-wider opacity-70">
 											#
 										</th>
-										<th className="min-w-50 py-3 pr-6 text-left text-[11px] font-semibold uppercase tracking-wider">
+										<th
+											className="min-w-50 py-3 pr-6 text-left text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+											onClick={() => toggleDistrictSort("name")}
+										>
 											Район
+											<SortArrow
+												active={districtSort.key === "name"}
+												dir={
+													districtSort.key === "name" ? districtSort.dir : "asc"
+												}
+											/>
 										</th>
-										<th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider">
+										<th
+											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+											onClick={() => toggleDistrictSort("fillRate")}
+										>
 											Уровень заполненности школ
+											<SortArrow
+												active={districtSort.key === "fillRate"}
+												dir={
+													districtSort.key === "fillRate"
+														? districtSort.dir
+														: "asc"
+												}
+											/>
 										</th>
-										<th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider">
+										<th
+											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+											onClick={() => toggleDistrictSort("repairBuildingsRate")}
+										>
 											Зданий требуют кап. ремонта
+											<SortArrow
+												active={districtSort.key === "repairBuildingsRate"}
+												dir={
+													districtSort.key === "repairBuildingsRate"
+														? districtSort.dir
+														: "asc"
+												}
+											/>
 										</th>
-										<th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider">
+										<th
+											className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+											onClick={() =>
+												toggleDistrictSort("criticalBuildingsRate")
+											}
+										>
 											Зданий в аварийном состоянии
+											<SortArrow
+												active={districtSort.key === "criticalBuildingsRate"}
+												dir={
+													districtSort.key === "criticalBuildingsRate"
+														? districtSort.dir
+														: "asc"
+												}
+											/>
 										</th>
 										{expanded && (
 											<>
-												<th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider">
+												<th
+													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+													onClick={() => toggleDistrictSort("schoolCount")}
+												>
 													Школ
+													<SortArrow
+														active={districtSort.key === "schoolCount"}
+														dir={
+															districtSort.key === "schoolCount"
+																? districtSort.dir
+																: "asc"
+														}
+													/>
 												</th>
-												<th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider">
+												<th
+													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+													onClick={() => toggleDistrictSort("totalCapacity")}
+												>
 													Мощность
+													<SortArrow
+														active={districtSort.key === "totalCapacity"}
+														dir={
+															districtSort.key === "totalCapacity"
+																? districtSort.dir
+																: "asc"
+														}
+													/>
 												</th>
-												<th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider">
+												<th
+													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+													onClick={() => toggleDistrictSort("students")}
+												>
 													Обучающихся
+													<SortArrow
+														active={districtSort.key === "students"}
+														dir={
+															districtSort.key === "students"
+																? districtSort.dir
+																: "asc"
+														}
+													/>
 												</th>
-												<th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider">
+												<th
+													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+													onClick={() =>
+														toggleDistrictSort("secondShiftStudents")
+													}
+												>
 													Обуч. во 2 смену
+													<SortArrow
+														active={districtSort.key === "secondShiftStudents"}
+														dir={
+															districtSort.key === "secondShiftStudents"
+																? districtSort.dir
+																: "asc"
+														}
+													/>
 												</th>
-												<th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider">
+												<th
+													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+													onClick={() => toggleDistrictSort("repairSchools")}
+												>
 													Школы, треб. ремонта
+													<SortArrow
+														active={districtSort.key === "repairSchools"}
+														dir={
+															districtSort.key === "repairSchools"
+																? districtSort.dir
+																: "asc"
+														}
+													/>
 												</th>
-												<th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider">
+												<th
+													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+													onClick={() => toggleDistrictSort("repairCapacity")}
+												>
 													Места в таких
+													<SortArrow
+														active={districtSort.key === "repairCapacity"}
+														dir={
+															districtSort.key === "repairCapacity"
+																? districtSort.dir
+																: "asc"
+														}
+													/>
 												</th>
-												<th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider">
+												<th
+													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+													onClick={() => toggleDistrictSort("formSchools")}
+												>
 													Строящиеся школы
+													<SortArrow
+														active={districtSort.key === "formSchools"}
+														dir={
+															districtSort.key === "formSchools"
+																? districtSort.dir
+																: "asc"
+														}
+													/>
 												</th>
-												<th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider">
+												<th
+													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+													onClick={() => toggleDistrictSort("formCapacity")}
+												>
 													Места в строящихся
+													<SortArrow
+														active={districtSort.key === "formCapacity"}
+														dir={
+															districtSort.key === "formCapacity"
+																? districtSort.dir
+																: "asc"
+														}
+													/>
 												</th>
-												<th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider">
+												<th
+													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+													onClick={() => toggleDistrictSort("workers")}
+												>
 													Работников
+													<SortArrow
+														active={districtSort.key === "workers"}
+														dir={
+															districtSort.key === "workers"
+																? districtSort.dir
+																: "asc"
+														}
+													/>
 												</th>
-												<th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider">
+												<th
+													className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none hover:text-blue-200 transition"
+													onClick={() => toggleDistrictSort("buildings")}
+												>
 													Зданий
+													<SortArrow
+														active={districtSort.key === "buildings"}
+														dir={
+															districtSort.key === "buildings"
+																? districtSort.dir
+																: "asc"
+														}
+													/>
 												</th>
 											</>
 										)}
@@ -484,7 +728,14 @@ export function DashboardPage() {
 											</td>
 											<td className="py-4 pr-6">
 												<div className="flex items-center gap-3">
-													<span className="h-2.5 w-2.5 shrink-0 rounded-full bg-neutral-300 dark:bg-neutral-600" />
+													<span
+														title={
+															r.schools.some((s) => s.a_school_with_bias)
+																? "Есть школа с необъективностью"
+																: "Нет школ с необъективностью"
+														}
+														className={`h-2.5 w-2.5 shrink-0 rounded-full ${r.schools.some((s) => s.a_school_with_bias) ? "bg-rose-500" : "bg-emerald-500"}`}
+													/>
 													<span className="font-semibold text-neutral-800 dark:text-neutral-200">
 														{r.shortName}
 													</span>
