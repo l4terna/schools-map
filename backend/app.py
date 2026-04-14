@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import FastAPI, UploadFile, File, Response, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 
@@ -15,6 +16,13 @@ COOKIE_NAME = "admin_session"
 COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 дней
 
 app = FastAPI(title="Schools Map API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 _last_upload_ts: int = int(time.time())
 

@@ -346,8 +346,8 @@ export function DashboardPage() {
 															</p>
 														</div>
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
-															<p className="font-bold text-neutral-400 dark:text-neutral-500">
-																—
+															<p className="font-bold text-neutral-800 dark:text-neutral-200">
+																{r.secondShiftStudents.toLocaleString("ru")}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
 																Во 2 смену
@@ -362,32 +362,32 @@ export function DashboardPage() {
 															</p>
 														</div>
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
-															<p className="font-bold text-neutral-400 dark:text-neutral-500">
-																—
+															<p className="font-bold text-neutral-800 dark:text-neutral-200">
+																{r.buildings.toLocaleString("ru")}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
 																Зданий
 															</p>
 														</div>
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
-															<p className="font-bold text-neutral-400 dark:text-neutral-500">
-																—
+															<p className="font-bold text-rose-600 dark:text-rose-400">
+																{`${r.repairBuildings} (${r.repairBuildingsRate.toFixed(1)}%)`}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
 																Треб. ремонта
 															</p>
 														</div>
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
-															<p className="font-bold text-neutral-400 dark:text-neutral-500">
-																—
+															<p className="font-bold text-rose-600 dark:text-rose-400">
+																{`${r.criticalBuildings} (${r.criticalBuildingsRate.toFixed(1)}%)`}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
 																Аварийное
 															</p>
 														</div>
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
-															<p className="font-bold text-neutral-400 dark:text-neutral-500">
-																—
+															<p className="font-bold text-neutral-800 dark:text-neutral-200">
+																{r.formSchools.toLocaleString("ru")}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
 																Строящиеся
@@ -493,11 +493,11 @@ export function DashboardPage() {
 											<td className="py-4 px-4 text-center">
 												<FillBar value={r.fillRate} />
 											</td>
-											<td className="py-4 px-4 text-center font-medium text-neutral-400 dark:text-neutral-500">
-												0,0%
+											<td className="py-4 px-4 text-center font-medium text-rose-600 dark:text-rose-400">
+												{r.repairBuildingsRate.toFixed(1)}%
 											</td>
-											<td className="py-4 px-4 text-center font-medium text-neutral-400 dark:text-neutral-500">
-												0,0%
+											<td className="py-4 px-4 text-center font-medium text-rose-600 dark:text-rose-400">
+												{r.criticalBuildingsRate.toFixed(1)}%
 											</td>
 											{expanded && (
 												<>
@@ -510,26 +510,26 @@ export function DashboardPage() {
 													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
 														{(r.district.students ?? 0).toLocaleString("ru")}
 													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-400 dark:text-neutral-500">
-														—
+													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+														{r.secondShiftStudents.toLocaleString("ru")}
 													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-400 dark:text-neutral-500">
-														—
+													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+														{r.repairSchools.toLocaleString("ru")}
 													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-400 dark:text-neutral-500">
-														—
+													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+														{r.repairCapacity.toLocaleString("ru")}
 													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-400 dark:text-neutral-500">
-														—
+													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+														{r.formSchools.toLocaleString("ru")}
 													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-400 dark:text-neutral-500">
-														—
+													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+														{r.formCapacity.toLocaleString("ru")}
 													</td>
 													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
 														{(r.district.workers ?? 0).toLocaleString("ru")}
 													</td>
-													<td className="py-4 px-4 text-center font-medium text-neutral-400 dark:text-neutral-500">
-														—
+													<td className="py-4 px-4 text-center font-medium text-neutral-700 dark:text-neutral-300">
+														{r.buildings.toLocaleString("ru")}
 													</td>
 												</>
 											)}
@@ -619,14 +619,18 @@ export function DashboardPage() {
 											/>
 											<StatCell
 												label="Требует кап. ремонта"
-												value="—"
-												accent="#6b7280"
+												value={`${totals.repairBuildingsRate.toFixed(1)}%`}
+												accent={
+													totals.repairBuildings > 0 ? "#ef4444" : "#10b981"
+												}
 												border
 											/>
 											<StatCell
 												label="В аварийном состоянии"
-												value="—"
-												accent="#6b7280"
+												value={`${totals.criticalBuildingsRate.toFixed(1)}%`}
+												accent={
+													totals.criticalBuildings > 0 ? "#ef4444" : "#10b981"
+												}
 												border
 											/>
 										</tr>
@@ -638,8 +642,8 @@ export function DashboardPage() {
 											/>
 											<StatCell
 												label="Обучающихся во 2 смену"
-												value="—"
-												accent="#6b7280"
+												value={totals.secondShiftStudents.toLocaleString("ru")}
+												accent="#8b5cf6"
 												border
 											/>
 											<StatCell
@@ -657,14 +661,14 @@ export function DashboardPage() {
 											/>
 											<StatCell
 												label="Мест в строящихся школах"
-												value="—"
-												accent="#6b7280"
+												value={totals.formCapacity.toLocaleString("ru")}
+												accent="#8b5cf6"
 												border
 											/>
 											<StatCell
 												label="Мест в ремонтируемых школах"
-												value="—"
-												accent="#6b7280"
+												value={totals.repairCapacity.toLocaleString("ru")}
+												accent="#ef4444"
 												border
 											/>
 										</tr>
@@ -694,13 +698,15 @@ export function DashboardPage() {
 									/>
 									<BigStat
 										label="Треб. кап. ремонта"
-										value="—"
-										accent="#6b7280"
+										value={`${totals.repairBuildingsRate.toFixed(1)}%`}
+										accent={totals.repairBuildings > 0 ? "#ef4444" : "#10b981"}
 									/>
 									<BigStat
 										label="Аварийное состояние"
-										value="—"
-										accent="#6b7280"
+										value={`${totals.criticalBuildingsRate.toFixed(1)}%`}
+										accent={
+											totals.criticalBuildings > 0 ? "#ef4444" : "#10b981"
+										}
 									/>
 								</div>
 							</div>

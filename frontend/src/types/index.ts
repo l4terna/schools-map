@@ -16,6 +16,15 @@ export interface School {
   site: string | null;
   district: string | null;
   is_state: boolean;
+  is_religional: boolean;
+  second_shift_students: number | null;
+  buildings: number | null;
+  renovated: boolean;
+  needs_repairs: boolean;
+  critical_condition: boolean;
+  form: boolean;
+  shkon: boolean;
+  a_school_with_bias: boolean;
   address: string | null;
   coords: [number, number] | null;
 }

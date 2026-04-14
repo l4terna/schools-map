@@ -212,7 +212,7 @@ export function AdminDashboardPage() {
 
 					<div className="mt-5">
 						<h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-							Основной формат (13 колонок)
+							Основной формат (22 колонки, A–V)
 						</h3>
 						<div className="mt-2 overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
 							<table className="w-full text-left text-xs">
@@ -247,9 +247,18 @@ export function AdminDashboardPage() {
 											"L",
 											"Район/Департамент",
 											"Текст",
-											"Департамент образования Мэрии г.Грозного",
+											"Грозный (город)",
 										],
 										["M", "Государственная", "Да/Нет", "Да"],
+										["N", "is_religional", "Да/Нет", "Нет"],
+										["O", "buildings", "Число", "3"],
+										["P", "renovated", "Да/Нет", "Да"],
+										["Q", "needs_repairs", "Да/Нет", "Нет"],
+										["R", "critical_condition", "Да/Нет", "Нет"],
+										["S", "second_shift(students)", "Число", "244"],
+										["T", "form", "Да/Нет", "Да"],
+										["U", "SHKON", "Да/Нет", "Да"],
+										["V", "A_school_with_bias", "Да/Нет", "Нет"],
 									].map(([col, name, type, example]) => (
 										<tr key={col}>
 											<td className="whitespace-nowrap px-3 py-1.5 font-mono text-neutral-400 dark:text-neutral-500">
@@ -273,23 +282,40 @@ export function AdminDashboardPage() {
 
 					<div className="mt-5 space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
 						<h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-							Важные условия
+							Когда строка загружается
+						</h3>
+						<p>
+							Строка попадает в систему, если заполнено <strong>хотя бы одно</strong>{" "}
+							из двух полей: <strong>район</strong> (L) или{" "}
+							<strong>координаты</strong> (I + J). Если оба поля пустые — строка
+							пропускается. Все остальные поля необязательны и могут быть пустыми.
+						</p>
+					</div>
+
+					<div className="mt-5 space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
+						<h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+							Правила заполнения
 						</h3>
 						<ul className="list-inside list-disc space-y-1.5 pl-1">
 							<li>
-								<strong>Все 13 колонок обязательны</strong> — строки с пустыми
-								ячейками будут пропущены.
-							</li>
-							<li>
 								Колонка <strong>«Район/Департамент»</strong> (L) должна точно
-								совпадать с одним из известных названий районов (например,{" "}
+								совпадать с одним из известных названий районов
+								(например,{" "}
 								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5 text-xs">
-									Департамент образования Мэрии г.Грозного
+									Грозный (город)
 								</code>
 								). Районы создаются автоматически на основе этого поля.
 							</li>
 							<li>
-								Колонка <strong>«Государственная»</strong> (M) принимает значения:{" "}
+								<strong>Координаты</strong> (I, J) — десятичные числа (например,{" "}
+								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5 text-xs">
+									43.3175
+								</code>
+								). Нужны обе колонки для отображения школы на карте. Если
+								координат нет — школа появится в списке, но не на карте.
+							</li>
+							<li>
+								Поля типа <strong>Да/Нет</strong> (M, N, P–R, T–V) принимают:{" "}
 								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5 text-xs">
 									Да
 								</code>
@@ -300,11 +326,11 @@ export function AdminDashboardPage() {
 								(или пусто = Нет).
 							</li>
 							<li>
-								<strong>Координаты</strong> (I, J) — десятичные числа (например,{" "}
-								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5 text-xs">
-									43.3175
-								</code>
-								). Используются для отображения школы на карте.
+								Пустые числовые поля (C–G, O, S) отобразятся как «—».
+							</li>
+							<li>
+								Название школы (B) может быть пустым — строка всё равно
+								загрузится, если указан район или координаты.
 							</li>
 							<li>
 								Статистика по районам (учащиеся, работники, учителя)
@@ -313,58 +339,6 @@ export function AdminDashboardPage() {
 						</ul>
 					</div>
 
-					<details className="mt-5">
-						<summary className="cursor-pointer text-sm font-semibold text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">
-							Устаревший формат (менее 13 колонок)
-						</summary>
-						<div className="mt-3 space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
-							<p>
-								Если в файле менее 13 колонок, используется устаревший формат, где
-								районы указываются отдельными строками (без порядкового номера и
-								сайта), а координаты — в одной ячейке через запятую{" "}
-								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5 text-xs">
-									43.3175, 45.6940
-								</code>
-								.
-							</p>
-							<div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
-								<table className="w-full text-left text-xs">
-									<thead className="bg-neutral-50 dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400">
-										<tr>
-											<th className="whitespace-nowrap px-3 py-2 font-medium">
-												№
-											</th>
-											<th className="whitespace-nowrap px-3 py-2 font-medium">
-												Колонка
-											</th>
-										</tr>
-									</thead>
-									<tbody className="divide-y divide-neutral-100 dark:divide-neutral-700 text-neutral-700 dark:text-neutral-300">
-										{[
-											["A", "Порядковый номер"],
-											["B", "Название (школа или район)"],
-											["C", "Смена"],
-											["D", "Мощность"],
-											["E", "Учащиеся"],
-											["F", "Работники"],
-											["G", "Учителя"],
-											["H", "Сайт"],
-											["I", "Государственная (Да/Нет)"],
-											["J", "Адрес"],
-											["K", "Координаты (широта, долгота)"],
-										].map(([col, name]) => (
-											<tr key={col}>
-												<td className="whitespace-nowrap px-3 py-1.5 font-mono text-neutral-400 dark:text-neutral-500">
-													{col}
-												</td>
-												<td className="whitespace-nowrap px-3 py-1.5">{name}</td>
-											</tr>
-										))}
-									</tbody>
-								</table>
-							</div>
-						</div>
-					</details>
 				</section>
 			</div>
 		</div>

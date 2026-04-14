@@ -123,6 +123,46 @@ function BackButton({
 	);
 }
 
+function yesNo(value: boolean) {
+	return value ? "Да" : "Нет";
+}
+
+function statusClass(value: boolean, tone: "positive" | "negative" | "neutral") {
+	if (tone === "positive") {
+		return value
+			? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+			: "bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-300";
+	}
+
+	if (tone === "negative") {
+		return value
+			? "bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+			: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+	}
+
+	return value
+		? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+		: "bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-300";
+}
+
+function StatusBadge({
+	label,
+	value,
+	tone = "neutral",
+}: {
+	label: string;
+	value: boolean;
+	tone?: "positive" | "negative" | "neutral";
+}) {
+	return (
+		<span
+			className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(value, tone)}`}
+		>
+			{label}: {yesNo(value)}
+		</span>
+	);
+}
+
 function DistrictList({
 	districts,
 	onSelect,
@@ -392,12 +432,14 @@ function SchoolDetail({
 				<h2 className="mt-3 text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
 					{school.name}
 				</h2>
-				{school.is_state && (
-					<span className="mt-2.5 inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/30 px-3 py-1 text-xs font-medium text-green-700 dark:text-green-400">
-						<span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-						Государственная
-					</span>
-				)}
+				<div className="mt-2.5 flex flex-wrap gap-2">
+					<StatusBadge label="Гос." value={school.is_state} tone="positive" />
+					<StatusBadge
+						label="Религ."
+						value={school.is_religional}
+						tone="positive"
+					/>
+				</div>
 			</div>
 			<div className="flex-1 overflow-y-auto px-5 py-4">
 				<div className="space-y-2">
@@ -507,20 +549,56 @@ function SchoolDetail({
 						</div>
 					)}
 					<div className="grid grid-cols-2 gap-2">
-						<MiniStat label="Обуч. во 2 смену" value="—" color="#6b7280" />
-						<MiniStat label="Зданий" value="—" color="#6b7280" />
+						<MiniStat
+							label="Обуч. во 2 смену"
+							value={
+								school.second_shift_students != null
+									? school.second_shift_students.toLocaleString("ru")
+									: "—"
+							}
+							color="#3b82f6"
+						/>
+						<MiniStat
+							label="Зданий"
+							value={school.buildings != null ? `${school.buildings}` : "—"}
+							color="#8b5cf6"
+						/>
 					</div>
 					<div className="grid grid-cols-2 gap-2">
-						<MiniStat label="Треб. ремонта" value="—" color="#6b7280" />
-						<MiniStat label="Аварийное" value="—" color="#6b7280" />
+						<MiniStat
+							label="Треб. ремонта"
+							value={yesNo(school.needs_repairs)}
+							color={school.needs_repairs ? "#ef4444" : "#10b981"}
+						/>
+						<MiniStat
+							label="Аварийное"
+							value={yesNo(school.critical_condition)}
+							color={school.critical_condition ? "#ef4444" : "#10b981"}
+						/>
 					</div>
 					<div className="grid grid-cols-2 gap-2">
-						<MiniStat label="Отремонтирована" value="—" color="#6b7280" />
-						<MiniStat label="Строится" value="—" color="#6b7280" />
+						<MiniStat
+							label="Отремонтирована"
+							value={yesNo(school.renovated)}
+							color={school.renovated ? "#10b981" : "#6b7280"}
+						/>
+						<MiniStat
+							label="Форма"
+							value={yesNo(school.form)}
+							color={school.form ? "#8b5cf6" : "#6b7280"}
+						/>
 					</div>
 					<div className="grid grid-cols-2 gap-2">
-						<MiniStat label="ШКОН" value="—" color="#6b7280" />
-						<MiniStat label="Необъективность" value="—" color="#6b7280" />
+						<MiniStat
+							label="ШКОН"
+							value={yesNo(school.shkon)}
+							color={school.shkon ? "#2563eb" : "#6b7280"}
+						/>
+						<MiniStat
+							label="С уклоном"
+							value={yesNo(school.a_school_with_bias)}
+							color={school.a_school_with_bias ? "#0ea5e9" : "#6b7280"}
+						/>
 					</div>
 				</div>
 			</div>

@@ -115,6 +115,27 @@ class BackendConfigTestCase(unittest.TestCase):
         self.assertEqual(authorized.status_code, 200)
         self.assertEqual(authorized.body, b'{"status":"ok"}')
 
+    def test_admin_login_uses_local_defaults_when_env_is_absent(self) -> None:
+        os.environ.pop("SCHOOLS_ADMIN_LOGIN", None)
+        os.environ.pop("SCHOOLS_ADMIN_PASSWORD", None)
+        os.environ.pop("SCHOOLS_ADMIN_TOKEN_SALT", None)
+
+        app_module = importlib.import_module("app")
+
+        login_response = Response()
+        valid_login = app_module.login(
+            app_module.LoginPayload(login="admin", password="change-me"),
+            login_response,
+        )
+        self.assertEqual(valid_login, {"status": "ok"})
+        self.assertIn("admin_session=", login_response.headers["set-cookie"])
+
+        invalid_login = app_module.login(
+            app_module.LoginPayload(login="admin", password="wrong"),
+            Response(),
+        )
+        self.assertEqual(invalid_login.status_code, 401)
+
     def test_public_district_loading_does_not_require_admin_env(self) -> None:
         os.environ.pop("SCHOOLS_ADMIN_LOGIN", None)
         os.environ.pop("SCHOOLS_ADMIN_PASSWORD", None)
@@ -133,7 +154,7 @@ class BackendConfigTestCase(unittest.TestCase):
                 list(range(11)),
                 [
                     None,
-                    "МУ 'Надтеречное РУО'",
+                    "Надтеречный р-н",
                     None,
                     None,
                     1200,
@@ -165,7 +186,106 @@ class BackendConfigTestCase(unittest.TestCase):
 
         self.assertEqual(payload["meta"]["schools_count"], 1)
         district = next(
-            item for item in payload["districts"] if item["name"] == "МУ 'Надтеречное РУО'"
+            item for item in payload["districts"] if item["name"] == "Надтеречный р-н"
         )
         self.assertEqual(district["id"], 5)
-        self.assertEqual(payload["schools"][0]["district"], "МУ 'Надтеречное РУО'")
+        self.assertEqual(payload["schools"][0]["district"], "Надтеречный р-н")
+
+    def test_new_flat_format_parses_extended_school_fields(self) -> None:
+        parser_module = importlib.import_module("parser")
+
+        rows = pd.DataFrame(
+            [
+                [
+                    None,
+                    "school_name",
+                    "shift_count",
+                    "power",
+                    "student_count",
+                    "employee_count",
+                    "edu_employee_count",
+                    "page_link",
+                    "latitude",
+                    "longitude",
+                    "adress",
+                    "district",
+                    "is_state",
+                    "is_religional",
+                    "buildings",
+                    "renovated",
+                    "needs_repairs",
+                    "critical_condition",
+                    "second_shift(students)",
+                    "form",
+                    "SHKON",
+                    "A_school_with_bias",
+                ],
+                [
+                    1,
+                    "СОШ №1",
+                    2,
+                    None,
+                    500,
+                    80,
+                    45,
+                    "school.test",
+                    43.1,
+                    45.6,
+                    "ул. Школьная, 1",
+                    "Грозный (город)",
+                    "true",
+                    "false",
+                    3,
+                    "Да",
+                    "Нет",
+                    "Да",
+                    244,
+                    "Да",
+                    "Да",
+                    "Нет",
+                ],
+                [
+                    None,
+                    "Служебный заголовок",
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    1,
+                    "Да",
+                    "Нет",
+                    "Нет",
+                    None,
+                    "Нет",
+                    "Нет",
+                    "Нет",
+                ],
+            ]
+        )
+
+        with patch.object(parser_module.pd, "read_excel", return_value=rows):
+            payload = parser_module.parse_excel(str(Path("unused.xlsx")))
+
+        self.assertEqual(payload["meta"]["schools_count"], 1)
+        district = next(
+            item for item in payload["districts"] if item["name"] == "Грозный (город)"
+        )
+        self.assertEqual(district["id"], 1)
+        school = payload["schools"][0]
+        self.assertIsNone(school["capacity"])
+        self.assertEqual(school["buildings"], 3)
+        self.assertTrue(school["renovated"])
+        self.assertFalse(school["needs_repairs"])
+        self.assertTrue(school["critical_condition"])
+        self.assertEqual(school["second_shift_students"], 244)
+        self.assertTrue(school["form"])
+        self.assertTrue(school["shkon"])
+        self.assertFalse(school["a_school_with_bias"])

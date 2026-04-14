@@ -7,23 +7,33 @@ from typing import Any
 
 import json
 import math
+import re
 
 import pandas as pd
 
 
 @dataclass
 class School:
-    name: str
-    shift: int | None
-    capacity: int | None
-    students: int | None
-    workers: int | None
-    teachers: int | None
-    site: str | None
-    district: str | None
-    is_state: bool
+    name: str | None = None
+    shift: int | None = None
+    capacity: int | None = None
+    students: int | None = None
+    workers: int | None = None
+    teachers: int | None = None
+    site: str | None = None
+    district: str | None = None
+    is_state: bool = False
+    is_religional: bool = False
     address: str | None = None
     coords: tuple[float, float] | None = None
+    buildings: int | None = None
+    renovated: bool = False
+    needs_repairs: bool = False
+    critical_condition: bool = False
+    second_shift_students: int | None = None
+    form: bool = False
+    shkon: bool = False
+    a_school_with_bias: bool = False
 
 
 @dataclass
@@ -90,11 +100,15 @@ def _is_filled(value: Any) -> bool:
     return True
 
 
-def _to_bool_state(value: Any) -> bool:
+def _to_bool(value: Any) -> bool:
     text = _to_str(value)
     if not text:
         return False
-    return text.lower() in {"да", "yes", "true", "1"}
+    return text.lower() in {"да", "yes", "true", "1", "y", "истина"}
+
+
+def _to_bool_state(value: Any) -> bool:
+    return _to_bool(value)
 
 
 def _parse_coords(value: Any) -> tuple[float, float] | None:
@@ -116,7 +130,15 @@ def _normalize_header(value: Any) -> str:
     text = _to_str(value)
     if not text:
         return ""
-    return text.lower().replace(" ", "_")
+    return re.sub(r"[^0-9a-zа-я]+", "_", text.lower()).strip("_")
+
+
+def _header_index(header: list[Any], *names: str, fallback: int | None = None) -> int | None:
+    normalized = {_normalize_header(name) for name in names}
+    for idx, value in enumerate(header):
+        if _normalize_header(value) in normalized:
+            return idx
+    return fallback
 
 
 def _cell(row: list[Any], idx: int | None) -> Any:
@@ -206,12 +228,11 @@ def _parse_legacy_format(df: pd.DataFrame, district_id_map: dict[str, int]) -> d
             districts.append(current_district)
             continue
 
-        if not name:
-            continue
+        district_name = current_district.name if current_district else None
+        coords = _parse_coords(_cell(row, 10))
 
-        if _is_nan(row_id):
-            if _is_nan(_cell(row, 2)) and _is_nan(_cell(row, 3)) and _is_nan(_cell(row, 4)):
-                continue
+        if not district_name and coords is None:
+            continue
 
         schools.append(
             School(
@@ -222,10 +243,10 @@ def _parse_legacy_format(df: pd.DataFrame, district_id_map: dict[str, int]) -> d
                 workers=_to_int(_cell(row, 5)),
                 teachers=_to_int(_cell(row, 6)),
                 site=_to_str(_cell(row, 7)),
-                district=current_district.name if current_district else None,
-                is_state=_to_bool_state(_cell(row, 8)),
+                district=district_name,
+                is_state=_to_bool(_cell(row, 8)),
                 address=_to_str(_cell(row, 9)),
-                coords=_parse_coords(_cell(row, 10)),
+                coords=coords,
             )
         )
 
@@ -234,50 +255,43 @@ def _parse_legacy_format(df: pd.DataFrame, district_id_map: dict[str, int]) -> d
 
 def _parse_new_flat_format(df: pd.DataFrame, district_id_map: dict[str, int]) -> dict[str, Any]:
     header = df.iloc[0].tolist()
-    school_idx = 1
-    shift_idx = 2
-    capacity_idx = 3
-    students_idx = 4
-    workers_idx = 5
-    teachers_idx = 6
-    site_idx = 7
 
-    lat_idx = 8
-    lon_idx = 9
-    address_idx = 10
-    district_idx = 11
-    state_idx = 12
-
-    required_idxs = [
-        school_idx,
-        shift_idx,
-        capacity_idx,
-        students_idx,
-        workers_idx,
-        teachers_idx,
-        site_idx,
-        lat_idx,
-        lon_idx,
-        address_idx,
-        district_idx,
-        state_idx,
-    ]
+    school_idx = _header_index(header, "school_name", fallback=1)
+    shift_idx = _header_index(header, "shift_count", fallback=2)
+    capacity_idx = _header_index(header, "power", fallback=3)
+    students_idx = _header_index(header, "student_count", fallback=4)
+    workers_idx = _header_index(header, "employee_count", fallback=5)
+    teachers_idx = _header_index(header, "edu_employee_count", fallback=6)
+    site_idx = _header_index(header, "page_link", fallback=7)
+    lat_idx = _header_index(header, "latitude", fallback=8)
+    lon_idx = _header_index(header, "longitude", fallback=9)
+    address_idx = _header_index(header, "adress", "address", fallback=10)
+    district_idx = _header_index(header, "district", fallback=11)
+    state_idx = _header_index(header, "is_state", fallback=12)
+    religional_idx = _header_index(header, "is_religional", fallback=13)
+    buildings_idx = _header_index(header, "buildings")
+    renovated_idx = _header_index(header, "renovated")
+    needs_repairs_idx = _header_index(header, "needs_repairs")
+    critical_condition_idx = _header_index(header, "critical_condition")
+    second_shift_idx = _header_index(header, "second_shift(students)", "second_shift_students")
+    form_idx = _header_index(header, "form")
+    shkon_idx = _header_index(header, "SHKON", "shkon")
+    bias_idx = _header_index(header, "A_school_with_bias", "a_school_with_bias")
 
     schools: list[School] = []
 
     for row_num in range(1, len(df)):
         row = df.iloc[row_num].tolist()
 
-        if any(not _is_filled(_cell(row, i)) for i in required_idxs):
-            continue
-
         name = _to_str(_cell(row, school_idx))
-        if not name:
-            continue
+        district_name = _to_str(_cell(row, district_idx))
 
         lat = _to_float(_cell(row, lat_idx))
         lon = _to_float(_cell(row, lon_idx))
         coords = (lat, lon) if lat is not None and lon is not None else None
+
+        if not district_name and coords is None:
+            continue
 
         schools.append(
             School(
@@ -287,11 +301,20 @@ def _parse_new_flat_format(df: pd.DataFrame, district_id_map: dict[str, int]) ->
                 students=_to_int(_cell(row, students_idx)),
                 workers=_to_int(_cell(row, workers_idx)),
                 teachers=_to_int(_cell(row, teachers_idx)),
-                site=_to_str(_cell(row, site_idx)) or _to_str(_cell(row, 7)),
-                district=_to_str(_cell(row, district_idx)),
-                is_state=_to_bool_state(_cell(row, state_idx)),
+                site=_to_str(_cell(row, site_idx)),
+                district=district_name,
+                is_state=_to_bool(_cell(row, state_idx)),
+                is_religional=_to_bool(_cell(row, religional_idx)),
                 address=_to_str(_cell(row, address_idx)),
                 coords=coords,
+                buildings=_to_int(_cell(row, buildings_idx)),
+                renovated=_to_bool(_cell(row, renovated_idx)),
+                needs_repairs=_to_bool(_cell(row, needs_repairs_idx)),
+                critical_condition=_to_bool(_cell(row, critical_condition_idx)),
+                second_shift_students=_to_int(_cell(row, second_shift_idx)),
+                form=_to_bool(_cell(row, form_idx)),
+                shkon=_to_bool(_cell(row, shkon_idx)),
+                a_school_with_bias=_to_bool(_cell(row, bias_idx)),
             )
         )
 
@@ -301,7 +324,7 @@ def _parse_new_flat_format(df: pd.DataFrame, district_id_map: dict[str, int]) ->
         if not school.district:
             continue
 
-        district_name = school.district.strip()
+        district_name = school.district
         district = districts_map.get(district_name)
         if district is None:
             district = District(
@@ -322,6 +345,7 @@ def _parse_new_flat_format(df: pd.DataFrame, district_id_map: dict[str, int]) ->
 
 def parse_excel(path: str) -> dict[str, Any]:
     df = pd.read_excel(path, header=None)
+    df = df.dropna(how="all").reset_index(drop=True)
     district_id_map = load_district_id_map()
 
     if df.empty:

@@ -48,6 +48,40 @@ function schoolIcon(color: string): string {
 const ICON_BLUE = schoolIcon("#3b82f6");
 const ICON_RED = schoolIcon("#ef4444");
 
+function yesNo(value: boolean) {
+	return value ? "Да" : "Нет";
+}
+
+function compactSchoolSummary(school: School) {
+	const line1 = [
+		`Гос.: ${yesNo(school.is_state)}`,
+		`Религ.: ${yesNo(school.is_religional)}`,
+		`Уклон: ${yesNo(school.a_school_with_bias)}`,
+	].join(" · ");
+
+	const line2 = [
+		school.second_shift_students != null
+			? `2 смена: ${school.second_shift_students.toLocaleString("ru")}`
+			: null,
+		school.buildings != null ? `Зданий: ${school.buildings}` : null,
+	]
+		.filter(Boolean)
+		.join(" · ");
+
+	const line3 = [
+		`Ремонт: ${yesNo(school.needs_repairs)}`,
+		`Аварийное: ${yesNo(school.critical_condition)}`,
+	].join(" · ");
+
+	const line4 = [
+		`Отремонтирована: ${yesNo(school.renovated)}`,
+		`Форма: ${yesNo(school.form)}`,
+		`ШКОН: ${yesNo(school.shkon)}`,
+	].join(" · ");
+
+	return [line1, line2, line3, line4].filter(Boolean).join("<br>");
+}
+
 export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
 	{
 		center,
@@ -296,6 +330,7 @@ ${school.shift != null ? `Сменность: ${school.shift}<br>` : ""}
 ${school.students != null ? `Обучающихся: ${school.students.toLocaleString("ru")}<br>` : ""}
 ${school.teachers != null ? `Педагогов: ${school.teachers.toLocaleString("ru")}<br>` : ""}
 ${school.workers != null ? `Работников: ${school.workers.toLocaleString("ru")}<br>` : ""}
+${compactSchoolSummary(school)}<br>
 <a href="#" onclick="window.__selectSchool('${school.name.replace(/'/g, "\\'")}');return false" style="display:inline-block;margin-top:6px;padding:4px 12px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500">Выбрать</a>
 </div>`,
 				},

@@ -11,8 +11,6 @@ const TH =
 	"py-3 px-3 text-center text-[11px] font-semibold uppercase tracking-wider text-white/70 whitespace-nowrap";
 const TD =
 	"py-4 px-3 text-center font-medium text-neutral-700 dark:text-neutral-300 whitespace-nowrap";
-const PLACEHOLDER =
-	"py-4 px-3 text-center font-medium text-neutral-400 dark:text-neutral-500 whitespace-nowrap";
 
 function siteUrl(site: string | null) {
 	if (!site) return null;
@@ -21,6 +19,46 @@ function siteUrl(site: string | null) {
 
 function fillRate(s: School) {
 	return (s.capacity ?? 0) > 0 ? ((s.students ?? 0) / s.capacity!) * 100 : 0;
+}
+
+function yesNo(value: boolean) {
+	return value ? "Да" : "Нет";
+}
+
+function statusClass(value: boolean, tone: "positive" | "negative" | "neutral") {
+	if (tone === "positive") {
+		return value
+			? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+			: "bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-300";
+	}
+
+	if (tone === "negative") {
+		return value
+			? "bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+			: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+	}
+
+	return value
+		? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+		: "bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-300";
+}
+
+function StatusTag({
+	label,
+	value,
+	tone = "neutral",
+}: {
+	label: string;
+	value: boolean;
+	tone?: "positive" | "negative" | "neutral";
+}) {
+	return (
+		<span
+			className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusClass(value, tone)}`}
+		>
+			{label}: {yesNo(value)}
+		</span>
+	);
 }
 
 const COLUMNS: Column[] = [
@@ -34,7 +72,7 @@ const COLUMNS: Column[] = [
 	},
 	{
 		label: "Обуч. во 2 смену",
-		render: () => <td className={PLACEHOLDER}>—</td>,
+		render: (s) => <td className={TD}>{fmt(s.second_shift_students)}</td>,
 	},
 	{
 		label: "Работников",
@@ -66,18 +104,81 @@ const COLUMNS: Column[] = [
 			);
 		},
 	},
-	{ label: "Зданий", render: () => <td className={PLACEHOLDER}>—</td> },
-	{ label: "Треб. ремонта", render: () => <td className={PLACEHOLDER}>—</td> },
-	{ label: "Аварийное", render: () => <td className={PLACEHOLDER}>—</td> },
+	{
+		label: "Зданий",
+		render: (s) => <td className={TD}>{fmt(s.buildings)}</td>,
+	},
+	{
+		label: "Треб. ремонта",
+		render: (s) => (
+			<td className="py-4 px-3 text-center whitespace-nowrap">
+				<span
+					className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(s.needs_repairs, "negative")}`}
+				>
+					{yesNo(s.needs_repairs)}
+				</span>
+			</td>
+		),
+	},
+	{
+		label: "Аварийное",
+		render: (s) => (
+			<td className="py-4 px-3 text-center whitespace-nowrap">
+				<span
+					className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(s.critical_condition, "negative")}`}
+				>
+					{yesNo(s.critical_condition)}
+				</span>
+			</td>
+		),
+	},
 	{
 		label: "Отремонтирована",
-		render: () => <td className={PLACEHOLDER}>—</td>,
+		render: (s) => (
+			<td className="py-4 px-3 text-center whitespace-nowrap">
+				<span
+					className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(s.renovated, "positive")}`}
+				>
+					{yesNo(s.renovated)}
+				</span>
+			</td>
+		),
 	},
-	{ label: "Строится", render: () => <td className={PLACEHOLDER}>—</td> },
-	{ label: "ШКОН", render: () => <td className={PLACEHOLDER}>—</td> },
 	{
-		label: "Необъективность",
-		render: () => <td className={PLACEHOLDER}>—</td>,
+		label: "Форма",
+		render: (s) => (
+			<td className="py-4 px-3 text-center whitespace-nowrap">
+				<span
+					className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(s.form, "neutral")}`}
+				>
+					{yesNo(s.form)}
+				</span>
+			</td>
+		),
+	},
+	{
+		label: "ШКОН",
+		render: (s) => (
+			<td className="py-4 px-3 text-center whitespace-nowrap">
+				<span
+					className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(s.shkon, "neutral")}`}
+				>
+					{yesNo(s.shkon)}
+				</span>
+			</td>
+		),
+	},
+	{
+		label: "С уклоном",
+		render: (s) => (
+			<td className="py-4 px-3 text-center whitespace-nowrap">
+				<span
+					className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(s.a_school_with_bias, "neutral")}`}
+				>
+					{yesNo(s.a_school_with_bias)}
+				</span>
+			</td>
+		),
 	},
 ];
 
@@ -119,6 +220,23 @@ export function SchoolTable({ schools }: { schools: School[] }) {
 										<p className="font-semibold text-neutral-800 dark:text-neutral-200">
 											{s.name}
 										</p>
+										<div className="mt-1 flex flex-wrap gap-1.5">
+											<StatusTag
+												label="Гос."
+												value={s.is_state}
+												tone="positive"
+											/>
+											<StatusTag
+												label="Религ."
+												value={s.is_religional}
+												tone="positive"
+											/>
+											<StatusTag
+												label="Уклон"
+												value={s.a_school_with_bias}
+												tone="neutral"
+											/>
+										</div>
 										{s.address && (
 											<p className="mt-0.5 truncate text-xs text-neutral-400 dark:text-neutral-500">
 												{s.address}

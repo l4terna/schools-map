@@ -8,13 +8,13 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent
 
+DEFAULT_ADMIN_LOGIN = "admin"
+DEFAULT_ADMIN_PASSWORD = "change-me"
+DEFAULT_ADMIN_TOKEN_SALT = "local-dev-admin-token-salt"
 
-def _require_env(name: str) -> str:
-    value = os.getenv(name)
-    if value:
-        return value
 
-    raise RuntimeError(f"Missing required environment variable: {name}")
+def _env_or_default(name: str, default: str) -> str:
+    return os.getenv(name) or default
 
 
 def _resolve_path(value: str) -> Path:
@@ -35,9 +35,9 @@ class AdminSettings:
 @lru_cache
 def get_admin_settings() -> AdminSettings:
     return AdminSettings(
-        admin_login=_require_env("SCHOOLS_ADMIN_LOGIN"),
-        admin_password=_require_env("SCHOOLS_ADMIN_PASSWORD"),
-        admin_token_salt=_require_env("SCHOOLS_ADMIN_TOKEN_SALT"),
+        admin_login=_env_or_default("SCHOOLS_ADMIN_LOGIN", DEFAULT_ADMIN_LOGIN),
+        admin_password=_env_or_default("SCHOOLS_ADMIN_PASSWORD", DEFAULT_ADMIN_PASSWORD),
+        admin_token_salt=_env_or_default("SCHOOLS_ADMIN_TOKEN_SALT", DEFAULT_ADMIN_TOKEN_SALT),
     )
 
 
