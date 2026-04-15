@@ -118,7 +118,9 @@ export function AdminDashboardPage() {
 						Выйти
 					</button>
 				</div>
-				<h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 sm:text-2xl">Админ-панель</h1>
+				<h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 sm:text-2xl">
+					Админ-панель
+				</h1>
 
 				<section className="mt-6 rounded-2xl bg-white dark:bg-neutral-800 p-4 shadow-lg dark:shadow-neutral-900/40 sm:mt-8 sm:p-6">
 					<h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
@@ -130,7 +132,9 @@ export function AdminDashboardPage() {
 						{dataStatus?.exists ? (
 							<span className="font-medium text-green-600">файл загружен</span>
 						) : (
-							<span className="font-medium text-amber-600">файл отсутствует</span>
+							<span className="font-medium text-amber-600">
+								файл отсутствует
+							</span>
 						)}
 					</p>
 
@@ -218,7 +222,9 @@ export function AdminDashboardPage() {
 							<table className="w-full text-left text-xs">
 								<thead className="bg-neutral-50 dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400">
 									<tr>
-										<th className="whitespace-nowrap px-3 py-2 font-medium">№</th>
+										<th className="whitespace-nowrap px-3 py-2 font-medium">
+											№
+										</th>
 										<th className="whitespace-nowrap px-3 py-2 font-medium">
 											Колонка
 										</th>
@@ -243,22 +249,17 @@ export function AdminDashboardPage() {
 										["I", "Широта", "Число", "43.3175"],
 										["J", "Долгота", "Число", "45.6940"],
 										["K", "Адрес", "Текст", "ул. Ленина, 1"],
-										[
-											"L",
-											"Район/Департамент",
-											"Текст",
-											"Грозный (город)",
-										],
+										["L", "Район/Департамент", "Текст", "Грозный (город)"],
 										["M", "Государственная", "Да/Нет", "Да"],
-										["N", "is_religional", "Да/Нет", "Нет"],
-										["O", "buildings", "Число", "3"],
-										["P", "renovated", "Да/Нет", "Да"],
-										["Q", "needs_repairs", "Да/Нет", "Нет"],
-										["R", "critical_condition", "Да/Нет", "Нет"],
-										["S", "second_shift(students)", "Число", "244"],
-										["T", "form", "Да/Нет", "Да"],
-										["U", "SHKON", "Да/Нет", "Да"],
-										["V", "A_school_with_bias", "Да/Нет", "Нет"],
+										["N", "Религиозная", "Да/Нет", "Нет"],
+										["O", "Кол-во зданий", "Число", "3"],
+										["P", "Отремонтирована", "Да/Нет", "Да"],
+										["Q", "Требует ремонта", "Да/Нет", "Нет"],
+										["R", "Аварийное состояние", "Да/Нет", "Нет"],
+										["S", "Обуч. во 2 смену", "Число", "244"],
+										["T", "Строится", "Да/Нет", "Да"],
+										["U", "ШКОН", "Да/Нет", "Да"],
+										["V", "Школа с уклоном", "Да/Нет", "Нет"],
 									].map(([col, name, type, example]) => (
 										<tr key={col}>
 											<td className="whitespace-nowrap px-3 py-1.5 font-mono text-neutral-400 dark:text-neutral-500">
@@ -285,10 +286,11 @@ export function AdminDashboardPage() {
 							Когда строка загружается
 						</h3>
 						<p>
-							Строка попадает в систему, если заполнено <strong>хотя бы одно</strong>{" "}
-							из двух полей: <strong>район</strong> (L) или{" "}
-							<strong>координаты</strong> (I + J). Если оба поля пустые — строка
-							пропускается. Все остальные поля необязательны и могут быть пустыми.
+							Строка попадает в систему, если заполнено{" "}
+							<strong>хотя бы одно</strong> из двух полей:{" "}
+							<strong>район</strong> (L) или <strong>координаты</strong> (I +
+							J). Если оба поля пустые — строка пропускается. Все остальные поля
+							необязательны и могут быть пустыми.
 						</p>
 					</div>
 
@@ -299,8 +301,7 @@ export function AdminDashboardPage() {
 						<ul className="list-inside list-disc space-y-1.5 pl-1">
 							<li>
 								Колонка <strong>«Район/Департамент»</strong> (L) должна точно
-								совпадать с одним из известных названий районов
-								(например,{" "}
+								совпадать с одним из известных названий районов (например,{" "}
 								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5 text-xs">
 									Грозный (город)
 								</code>
@@ -325,20 +326,18 @@ export function AdminDashboardPage() {
 								</code>{" "}
 								(или пусто = Нет).
 							</li>
-							<li>
-								Пустые числовые поля (C–G, O, S) отобразятся как «—».
-							</li>
+							<li>Пустые числовые поля (C–G, O, S) отобразятся как «—».</li>
 							<li>
 								Название школы (B) может быть пустым — строка всё равно
 								загрузится, если указан район или координаты.
 							</li>
 							<li>
 								Статистика по районам (учащиеся, работники, учителя)
-								рассчитывается <strong>автоматически</strong> как сумма по школам.
+								рассчитывается <strong>автоматически</strong> как сумма по
+								школам.
 							</li>
 						</ul>
 					</div>
-
 				</section>
 			</div>
 		</div>
