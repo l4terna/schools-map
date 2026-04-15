@@ -18,10 +18,36 @@ html.dark #root {
 	background-color: #171717;
 }
 
-* {
+*:not(.table-scroll) {
 	scrollbar-width: none;
 }
 
-*::-webkit-scrollbar {
+*:not(.table-scroll)::-webkit-scrollbar {
 	display: none;
+}
+
+.table-scroll {
+	overflow-y: scroll !important;
+	scrollbar-width: thin !important;
+	scrollbar-color: rgba(130, 130, 130, 0.6) rgba(0, 0, 0, 0.06) !important;
+}
+
+.table-scroll::-webkit-scrollbar {
+	display: block !important;
+	width: 8px !important;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0.06) !important;
+	border-radius: 4px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+	background-color: rgba(130, 130, 130, 0.6) !important;
+	border-radius: 4px;
+	min-height: 40px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+	background-color: rgba(100, 100, 100, 0.8) !important;
 }

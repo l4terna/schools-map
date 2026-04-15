@@ -159,7 +159,7 @@ export function DashboardPage() {
 									{sortedSchools.length} {schoolWord(sortedSchools.length)}
 								</span>
 							</div>
-							<div className="flex-1 overflow-auto">
+							<div className="flex-1 overflow-auto table-scroll">
 								<SchoolTable
 									schools={sortedSchools}
 									sort={schoolSort}
@@ -348,7 +348,7 @@ export function DashboardPage() {
 							</button>
 						</div>
 						{/* Mobile: expandable card list */}
-						<div className="flex-1 overflow-auto md:hidden">
+						<div className="flex-1 overflow-auto table-scroll md:hidden">
 							<div className="divide-y divide-neutral-100 dark:divide-neutral-700">
 								{sorted.map((r, i) => {
 									const students = r.district.students ?? 0;
@@ -458,7 +458,9 @@ export function DashboardPage() {
 															</p>
 														</div>
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
-															<p className="font-bold text-rose-600 dark:text-rose-400">
+															<p
+																className={`font-bold ${r.repairBuildingsRate > 0 ? "text-orange-500 dark:text-orange-400" : "text-neutral-800 dark:text-neutral-200"}`}
+															>
 																{`${r.repairBuildings} (${r.repairBuildingsRate.toFixed(1)}%)`}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
@@ -466,7 +468,9 @@ export function DashboardPage() {
 															</p>
 														</div>
 														<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
-															<p className="font-bold text-rose-600 dark:text-rose-400">
+															<p
+																className={`font-bold ${r.criticalBuildingsRate > 0 ? "text-orange-500 dark:text-orange-400" : "text-neutral-800 dark:text-neutral-200"}`}
+															>
 																{`${r.criticalBuildings} (${r.criticalBuildingsRate.toFixed(1)}%)`}
 															</p>
 															<p className="text-neutral-400 dark:text-neutral-500">
@@ -505,7 +509,7 @@ export function DashboardPage() {
 							</div>
 						</div>
 						{/* Desktop: full table */}
-						<div className="hidden flex-1 overflow-auto md:block">
+						<div className="hidden flex-1 overflow-auto table-scroll md:block">
 							<table className="w-full border-collapse text-[13px]">
 								<thead className="sticky top-0 z-10">
 									<tr className="bg-[#1e3a5f] text-white">
@@ -744,10 +748,14 @@ export function DashboardPage() {
 											<td className="py-4 px-4 text-center">
 												<FillBar value={r.fillRate} />
 											</td>
-											<td className="py-4 px-4 text-center font-medium text-rose-600 dark:text-rose-400">
+											<td
+												className={`py-4 px-4 text-center font-medium ${r.repairBuildingsRate > 0 ? "text-orange-500 dark:text-orange-400" : "text-neutral-700 dark:text-neutral-300"}`}
+											>
 												{r.repairBuildingsRate.toFixed(1)}%
 											</td>
-											<td className="py-4 px-4 text-center font-medium text-rose-600 dark:text-rose-400">
+											<td
+												className={`py-4 px-4 text-center font-medium ${r.criticalBuildingsRate > 0 ? "text-orange-500 dark:text-orange-400" : "text-neutral-700 dark:text-neutral-300"}`}
+											>
 												{r.criticalBuildingsRate.toFixed(1)}%
 											</td>
 											{expanded && (
@@ -872,7 +880,7 @@ export function DashboardPage() {
 												label="Требует кап. ремонта"
 												value={`${totals.repairBuildingsRate.toFixed(1)}%`}
 												accent={
-													totals.repairBuildings > 0 ? "#ef4444" : "#10b981"
+													totals.repairBuildings > 0 ? "#f97316" : "#a3a3a3"
 												}
 												border
 											/>
@@ -880,7 +888,7 @@ export function DashboardPage() {
 												label="В аварийном состоянии"
 												value={`${totals.criticalBuildingsRate.toFixed(1)}%`}
 												accent={
-													totals.criticalBuildings > 0 ? "#ef4444" : "#10b981"
+													totals.criticalBuildings > 0 ? "#f97316" : "#a3a3a3"
 												}
 												border
 											/>
@@ -950,13 +958,13 @@ export function DashboardPage() {
 									<BigStat
 										label="Треб. кап. ремонта"
 										value={`${totals.repairBuildingsRate.toFixed(1)}%`}
-										accent={totals.repairBuildings > 0 ? "#ef4444" : "#10b981"}
+										accent={totals.repairBuildings > 0 ? "#f97316" : "#a3a3a3"}
 									/>
 									<BigStat
 										label="Аварийное состояние"
 										value={`${totals.criticalBuildingsRate.toFixed(1)}%`}
 										accent={
-											totals.criticalBuildings > 0 ? "#ef4444" : "#10b981"
+											totals.criticalBuildings > 0 ? "#f97316" : "#a3a3a3"
 										}
 									/>
 								</div>
