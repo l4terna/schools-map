@@ -137,6 +137,38 @@ export function MapPage() {
 
 	return (
 		<div className="relative h-screen bg-neutral-100 dark:bg-neutral-800">
+			{/* Mobile warning */}
+			<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 lg:hidden">
+				<div className="w-full max-w-sm rounded-2xl bg-white dark:bg-neutral-800 p-6 text-center shadow-2xl">
+					<svg
+						className="mx-auto mb-4 h-12 w-12 text-amber-500"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={1.5}
+							d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+						/>
+					</svg>
+					<h2 className="text-lg font-bold text-neutral-800 dark:text-neutral-200">
+						Карта недоступна
+					</h2>
+					<p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+						Карта школ доступна только на компьютере или планшете. Откройте сайт
+						на устройстве с большим экраном.
+					</p>
+					<Link
+						to="/"
+						className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 active:scale-95"
+					>
+						На главную
+					</Link>
+				</div>
+			</div>
+
 			<div className="absolute right-4 top-4 z-20 flex gap-2">
 				<Link
 					to="/"

@@ -299,9 +299,9 @@ export function DashboardPage() {
 				</Link>
 				<ThemeToggle />
 			</div>
-			<div className="mx-auto flex min-w-0 w-full max-w-screen-sm flex-1 flex-col lg:mx-0 lg:min-h-0 lg:max-w-none lg:flex-row lg:overflow-hidden">
+			<div className="mx-auto flex min-w-0 w-full max-w-screen-sm flex-1 flex-col md:max-w-none lg:mx-0 lg:min-h-0 lg:flex-row lg:overflow-hidden">
 				<div
-					className={`flex min-w-0 flex-col p-4 lg:min-h-0 lg:p-6 ${expanded ? "lg:flex-1" : "lg:flex-1 lg:w-[62%] lg:shrink-0"}`}
+					className={`flex min-w-0 flex-col p-4 lg:min-h-0 lg:p-6 ${expanded ? "lg:flex-1" : "lg:flex-1 lg:w-1/2 xl:w-[62%] lg:shrink-0"}`}
 				>
 					<div className="flex h-[70vh] min-w-0 flex-col overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm dark:shadow-neutral-900/30 lg:h-auto lg:min-h-0 lg:flex-1">
 						<div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50/60 dark:bg-neutral-800/60 px-4 py-2.5 sm:px-5">
@@ -801,7 +801,7 @@ export function DashboardPage() {
 				</div>
 
 				{!expanded && (
-					<div className="flex w-full flex-col gap-5 p-4 lg:w-[38%] lg:overflow-y-auto lg:p-6 lg:pl-0">
+					<div className="flex w-full flex-col gap-5 p-4 lg:w-1/2 xl:w-[38%] lg:overflow-y-auto lg:p-6 lg:pl-0">
 						<div className="hidden items-center gap-2 md:flex">
 							<Link
 								to="/map"

@@ -39,9 +39,9 @@ export default defineConfig(({ mode }) => {
 					],
 				},
 				manifest: {
-					name: "Карта школ",
-					short_name: "Школы",
-					description: "Карта школ Чеченской Республики",
+					name: "Школы Чеченской Республики",
+					short_name: "Школы ЧР",
+					description: "Мониторинг школ Чеченской Республики",
 					theme_color: "#1e3a5f",
 					background_color: "#ffffff",
 					display: "standalone",
