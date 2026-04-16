@@ -258,8 +258,8 @@ export function AdminDashboardPage() {
 										["R", "Аварийное состояние", "Да/Нет", "Нет"],
 										["S", "Обуч. во 2 смену", "Число", "244"],
 										["T", "Строится", "Да/Нет", "Да"],
-										["U", "ШКОН", "Да/Нет", "Да"],
-										["V", "Школа с уклоном", "Да/Нет", "Нет"],
+										["U", "ШНОР", "Да/Нет", "Да"],
+										["V", "Школа с необъективностью", "Да/Нет", "Нет"],
 									].map(([col, name, type, example]) => (
 										<tr key={col}>
 											<td className="whitespace-nowrap px-3 py-1.5 font-mono text-neutral-400 dark:text-neutral-500">

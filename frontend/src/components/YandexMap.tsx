@@ -56,7 +56,7 @@ function compactSchoolSummary(school: School) {
 	const line1 = [
 		`Гос.: ${yesNo(school.is_state)}`,
 		`Религ.: ${yesNo(school.is_religional)}`,
-		`Уклон: ${yesNo(school.a_school_with_bias)}`,
+		`Необъект.: ${yesNo(school.a_school_with_bias)}`,
 	].join(" · ");
 
 	const line2 = [
@@ -76,7 +76,7 @@ function compactSchoolSummary(school: School) {
 	const line4 = [
 		`Отремонтирована: ${yesNo(school.renovated)}`,
 		`Форма: ${yesNo(school.form)}`,
-		`ШКОН: ${yesNo(school.shkon)}`,
+		`ШНОР: ${yesNo(school.shkon)}`,
 	].join(" · ");
 
 	return [line1, line2, line3, line4].filter(Boolean).join("<br>");

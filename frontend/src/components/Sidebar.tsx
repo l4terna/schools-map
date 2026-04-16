@@ -127,7 +127,10 @@ function yesNo(value: boolean) {
 	return value ? "Да" : "Нет";
 }
 
-function statusClass(value: boolean, tone: "positive" | "negative" | "neutral") {
+function statusClass(
+	value: boolean,
+	tone: "positive" | "negative" | "neutral",
+) {
 	if (tone === "positive") {
 		return value
 			? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
@@ -590,12 +593,12 @@ function SchoolDetail({
 					</div>
 					<div className="grid grid-cols-2 gap-2">
 						<MiniStat
-							label="ШКОН"
+							label="ШНОР"
 							value={yesNo(school.shkon)}
 							color={school.shkon ? "#2563eb" : "#6b7280"}
 						/>
 						<MiniStat
-							label="С уклоном"
+							label="С необъективностью"
 							value={yesNo(school.a_school_with_bias)}
 							color={school.a_school_with_bias ? "#0ea5e9" : "#6b7280"}
 						/>

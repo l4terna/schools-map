@@ -173,7 +173,7 @@ const COLUMNS: Column[] = [
 		),
 	},
 	{
-		label: "ШКОН",
+		label: "ШНОР",
 		sortKey: "shkon",
 		render: (s) => (
 			<td className="py-4 px-3 text-center whitespace-nowrap">
@@ -186,7 +186,7 @@ const COLUMNS: Column[] = [
 		),
 	},
 	{
-		label: "С уклоном",
+		label: "С необъективностью",
 		sortKey: "a_school_with_bias",
 		render: (s) => (
 			<td className="py-4 px-3 text-center whitespace-nowrap">
@@ -351,7 +351,7 @@ function MobileSchoolCards({ schools }: { schools: School[] }) {
 										tone="positive"
 									/>
 									<StatusTag label="Строится" value={s.form} tone="neutral" />
-									<StatusTag label="ШКОН" value={s.shkon} tone="neutral" />
+									<StatusTag label="ШНОР" value={s.shkon} tone="neutral" />
 									<StatusTag
 										label="Необъект."
 										value={s.a_school_with_bias}
@@ -454,7 +454,7 @@ export function SchoolTable({ schools, sort, onToggleSort }: SchoolTableProps) {
 													tone="positive"
 												/>
 												<StatusTag
-													label="Уклон"
+													label="Необъект."
 													value={s.a_school_with_bias}
 													tone="neutral"
 												/>
