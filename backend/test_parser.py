@@ -112,6 +112,61 @@ def test_flat_district_aggregation_skips_null_district():
     assert grozny["students"] == 300
 
 
+def test_flat_empty_boolean_fields_default_false():
+    path = _write_xlsx([
+        FLAT_HEADER,
+        ["School A", 1, 500, 300, 50, 30, None, None, None, None, "Грозный (город)", None, None],
+    ])
+    result = parse_excel(path)
+    s = result["schools"][0]
+    assert s["is_state"] is False
+    assert s["is_religional"] is False
+
+
+def test_flat_defaults_missing_buildings_to_one_and_keeps_second_shift_unknown():
+    header = FLAT_HEADER + ["buildings", "second_shift(students)"]
+    path = _write_xlsx([
+        header,
+        ["School A", 2, 500, 300, 50, 30, None, None, None, None, "Грозный (город)", "да", "нет", None, None],
+    ])
+    result = parse_excel(path)
+    s = result["schools"][0]
+    assert s["buildings"] == 1
+    assert s["second_shift_students"] is None
+
+
+def test_flat_repair_fields_are_true_by_any_non_negative_content():
+    header = FLAT_HEADER + ["renovated", "needs_repairs"]
+    path = _write_xlsx([
+        header,
+        ["School A", 1, 500, 300, 50, 30, None, None, None, None, "Грозный (город)", "да", "нет", "2021", "требует"],
+        ["School B", 1, 400, 200, 40, 20, None, None, None, None, "Грозный (город)", "да", "нет", "нет", "Не требуется"],
+    ])
+    result = parse_excel(path)
+    first, second = result["schools"]
+    assert first["renovated"] is True
+    assert first["needs_repairs"] is True
+    assert second["renovated"] is False
+    assert second["needs_repairs"] is False
+
+
+def test_flat_grozny_internal_districts_are_aggregated_into_city():
+    header = FLAT_HEADER + ["buildings", "renovated", "needs_repairs"]
+    path = _write_xlsx([
+        header,
+        ["School A", 1, 500, 300, 50, 30, None, None, None, None, "Грозный (город)", "да", "нет", 1, None, None],
+        ["School B", 1, 400, 200, 40, 20, None, None, None, None, "Ахматовский р-н", "да", "нет", 1, None, None],
+        ["School C", 1, 300, 100, 30, 10, None, None, None, None, "Байсангуровский р-н", "да", "нет", 1, None, None],
+    ])
+    result = parse_excel(path)
+
+    grozny = next(d for d in result["districts"] if d["name"] == "Грозный (город)")
+    assert grozny["students"] == 600
+    assert all(s["district"] == "Грозный (город)" for s in result["schools"])
+    assert "Ахматовский р-н" not in {d["name"] for d in result["districts"]}
+    assert "Байсангуровский р-н" not in {d["name"] for d in result["districts"]}
+
+
 def test_flat_mixed_rows():
     """Mix of complete, partial, and skipped rows."""
     path = _write_xlsx([

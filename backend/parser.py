@@ -26,7 +26,7 @@ class School:
     is_religional: bool = False
     address: str | None = None
     coords: tuple[float, float] | None = None
-    buildings: int | None = None
+    buildings: int | None = 1
     renovated: bool = False
     needs_repairs: bool = False
     critical_condition: bool = False
@@ -46,6 +46,44 @@ class District:
 
 
 DISTRICTS_DATA_PATH = Path(__file__).resolve().parent / "data" / "districts.json"
+CANONICAL_GROZNY_DISTRICT = "Грозный (город)"
+GROZNY_INTERNAL_DISTRICTS = {
+    "Ахматовский р-н",
+    "Висаитовский р-н",
+    "Шейх-Мансуровский р-н",
+    "Байсангуровский р-н",
+}
+GROZNY_NAME_ALIASES = {
+    "грозный",
+    "г. грозный",
+    "город грозный",
+    "грозный (город)",
+    "городской округ грозный",
+}
+NEGATIVE_PRESENCE_BOOL_VALUES = {
+    "-",
+    "—",
+    "0",
+    "0.0",
+    "false",
+    "n",
+    "no",
+    "ytn",
+    "нет",
+    "нет.",
+    "ложь",
+    "не отремонтирована",
+    "не отремонтировано",
+    "не отремонтирован",
+    "не проводился",
+    "не проводилась",
+    "не проводилось",
+    "не требуется",
+    "не требует",
+    "не требуются",
+    "нет необходимости",
+    "отсутствует",
+}
 
 
 @lru_cache
@@ -92,6 +130,19 @@ def _to_str(value: Any) -> str | None:
     return text or None
 
 
+def _normalize_district_name(value: str | None) -> str | None:
+    if not value:
+        return None
+
+    name = value.strip()
+    normalized = re.sub(r"\s+", " ", name.lower()).strip()
+
+    if name in GROZNY_INTERNAL_DISTRICTS or normalized in GROZNY_NAME_ALIASES:
+        return CANONICAL_GROZNY_DISTRICT
+
+    return name
+
+
 def _is_filled(value: Any) -> bool:
     if _is_nan(value):
         return False
@@ -105,6 +156,21 @@ def _to_bool(value: Any) -> bool:
     if not text:
         return False
     return text.lower() in {"да", "yes", "true", "1", "y", "истина"}
+
+
+def _to_bool_by_presence(value: Any) -> bool:
+    """Treat any filled repair marker as true except common explicit negatives."""
+    text = _to_str(value)
+    if not text:
+        return False
+
+    normalized = re.sub(r"\s+", " ", text.lower()).strip(" .;,:")
+    if normalized in NEGATIVE_PRESENCE_BOOL_VALUES:
+        return False
+
+    return not normalized.startswith(
+        ("нет ", "нет/", "нет-", "не треб", "не отремонт", "не провод")
+    )
 
 
 def _to_bool_state(value: Any) -> bool:
@@ -159,7 +225,12 @@ def _is_district_row(name: str | None, site: str | None, district_id_map: dict[s
     if site:
         return False
 
-    return name_stripped in district_id_map
+    return name_stripped in district_id_map or _normalize_district_name(name_stripped) in district_id_map
+
+
+def _buildings_count(value: Any) -> int:
+    parsed = _to_int(value)
+    return parsed if parsed is not None else 1
 
 
 def _payload(
@@ -169,10 +240,29 @@ def _payload(
     district_id_map: dict[str, int],
 ) -> dict[str, Any]:
     by_name: dict[str, District] = {}
+
     for district in districts:
-        by_name[district.name] = district
+        normalized_name = _normalize_district_name(district.name) or district.name
+        current = by_name.get(normalized_name)
+        if current is None:
+            by_name[normalized_name] = District(
+                id=district_id_map.get(normalized_name, district.id),
+                name=normalized_name,
+                students=district.students or 0,
+                teachers=district.teachers or 0,
+                workers=district.workers or 0,
+            )
+            continue
+
+        current.students = (current.students or 0) + (district.students or 0)
+        current.teachers = (current.teachers or 0) + (district.teachers or 0)
+        current.workers = (current.workers or 0) + (district.workers or 0)
 
     for name, district_id in district_id_map.items():
+        normalized_name = _normalize_district_name(name)
+        if not normalized_name or normalized_name != name:
+            continue
+
         if name in by_name:
             current = by_name[name]
             if current.id is None:
@@ -218,9 +308,10 @@ def _parse_legacy_format(df: pd.DataFrame, district_id_map: dict[str, int]) -> d
         name_stripped = name.strip() if name else None
 
         if _is_nan(row_id) and _is_district_row(name, _to_str(_cell(row, 7)), district_id_map):
+            district_name = _normalize_district_name(name_stripped)
             current_district = District(
-                id=district_id_map.get(name_stripped),
-                name=name_stripped,
+                id=district_id_map.get(district_name),
+                name=district_name or name_stripped,
                 students=_to_int(_cell(row, 4)),
                 workers=_to_int(_cell(row, 5)),
                 teachers=_to_int(_cell(row, 6)),
@@ -228,7 +319,7 @@ def _parse_legacy_format(df: pd.DataFrame, district_id_map: dict[str, int]) -> d
             districts.append(current_district)
             continue
 
-        district_name = current_district.name if current_district else None
+        district_name = _normalize_district_name(current_district.name) if current_district else None
         coords = _parse_coords(_cell(row, 10))
 
         if not district_name and coords is None:
@@ -284,7 +375,7 @@ def _parse_new_flat_format(df: pd.DataFrame, district_id_map: dict[str, int]) ->
         row = df.iloc[row_num].tolist()
 
         name = _to_str(_cell(row, school_idx))
-        district_name = _to_str(_cell(row, district_idx))
+        district_name = _normalize_district_name(_to_str(_cell(row, district_idx)))
 
         lat = _to_float(_cell(row, lat_idx))
         lon = _to_float(_cell(row, lon_idx))
@@ -307,9 +398,9 @@ def _parse_new_flat_format(df: pd.DataFrame, district_id_map: dict[str, int]) ->
                 is_religional=_to_bool(_cell(row, religional_idx)),
                 address=_to_str(_cell(row, address_idx)),
                 coords=coords,
-                buildings=_to_int(_cell(row, buildings_idx)),
-                renovated=_to_bool(_cell(row, renovated_idx)),
-                needs_repairs=_to_bool(_cell(row, needs_repairs_idx)),
+                buildings=_buildings_count(_cell(row, buildings_idx)),
+                renovated=_to_bool_by_presence(_cell(row, renovated_idx)),
+                needs_repairs=_to_bool_by_presence(_cell(row, needs_repairs_idx)),
                 critical_condition=_to_bool(_cell(row, critical_condition_idx)),
                 second_shift_students=_to_int(_cell(row, second_shift_idx)),
                 form=_to_bool(_cell(row, form_idx)),

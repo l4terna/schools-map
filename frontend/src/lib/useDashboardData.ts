@@ -111,17 +111,17 @@ export function useDashboardData() {
 					0,
 				);
 				const buildings = schools.reduce(
-					(sum, school) => sum + (school.buildings ?? 0),
+					(sum, school) => sum + schoolBuildingsCount(school),
 					0,
 				);
 				const repairBuildings = schools.reduce(
 					(sum, school) =>
-						sum + (school.needs_repairs ? (school.buildings ?? 0) : 0),
+						sum + (school.needs_repairs ? schoolBuildingsCount(school) : 0),
 					0,
 				);
 				const criticalBuildings = schools.reduce(
 					(sum, school) =>
-						sum + (school.critical_condition ? (school.buildings ?? 0) : 0),
+						sum + (school.critical_condition ? schoolBuildingsCount(school) : 0),
 					0,
 				);
 				const secondShiftStudents = schools.reduce(
@@ -318,6 +318,21 @@ export function useDashboardData() {
 
 export function fmt(v: number | null) {
 	return v != null ? v.toLocaleString("ru") : "—";
+}
+
+export function fmtSecondShiftStudents(school: Pick<School, "shift" | "second_shift_students">) {
+	if (school.second_shift_students != null) {
+		return school.second_shift_students.toLocaleString("ru");
+	}
+
+	if (school.shift === 2) return "Н/Д";
+	if (school.shift === 1) return "0";
+
+	return "—";
+}
+
+export function schoolBuildingsCount(school: Pick<School, "buildings">) {
+	return school.buildings ?? 1;
 }
 
 export function schoolWord(n: number): string {

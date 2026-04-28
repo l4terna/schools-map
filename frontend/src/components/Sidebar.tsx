@@ -1,6 +1,10 @@
 import { useState } from "react";
 import type { District, School } from "@/types";
 import { DISTRICT_GEO } from "@/data/districts";
+import {
+	fmtSecondShiftStudents,
+	schoolBuildingsCount,
+} from "@/lib/useDashboardData";
 
 interface SidebarProps {
 	districts: District[];
@@ -554,16 +558,12 @@ function SchoolDetail({
 					<div className="grid grid-cols-2 gap-2">
 						<MiniStat
 							label="Обуч. во 2 смену"
-							value={
-								school.second_shift_students != null
-									? school.second_shift_students.toLocaleString("ru")
-									: "—"
-							}
+							value={fmtSecondShiftStudents(school)}
 							color="#3b82f6"
 						/>
 						<MiniStat
 							label="Зданий"
-							value={school.buildings != null ? `${school.buildings}` : "—"}
+							value={`${schoolBuildingsCount(school)}`}
 							color="#8b5cf6"
 						/>
 					</div>

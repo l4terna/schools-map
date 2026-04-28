@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import type { School } from "@/types";
-import { fmt } from "@/lib/useDashboardData";
+import {
+	fmt,
+	fmtSecondShiftStudents,
+	schoolBuildingsCount,
+} from "@/lib/useDashboardData";
 import type { SortState } from "@/lib/useDashboardData";
 
 interface Column {
@@ -80,7 +84,7 @@ const COLUMNS: Column[] = [
 	{
 		label: "Обуч. во 2 смену",
 		sortKey: "second_shift_students",
-		render: (s) => <td className={TD}>{fmt(s.second_shift_students)}</td>,
+		render: (s) => <td className={TD}>{fmtSecondShiftStudents(s)}</td>,
 	},
 	{
 		label: "Работников",
@@ -118,7 +122,7 @@ const COLUMNS: Column[] = [
 	{
 		label: "Зданий",
 		sortKey: "buildings",
-		render: (s) => <td className={TD}>{fmt(s.buildings)}</td>,
+		render: (s) => <td className={TD}>{schoolBuildingsCount(s)}</td>,
 	},
 	{
 		label: "Треб. ремонта",
@@ -302,7 +306,7 @@ function MobileSchoolCards({ schools }: { schools: School[] }) {
 									</div>
 									<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
 										<p className="font-bold text-neutral-800 dark:text-neutral-200">
-											{fmt(s.second_shift_students)}
+											{fmtSecondShiftStudents(s)}
 										</p>
 										<p className="text-neutral-400 dark:text-neutral-500">
 											Во 2 смену
@@ -326,7 +330,7 @@ function MobileSchoolCards({ schools }: { schools: School[] }) {
 									</div>
 									<div className="rounded-lg bg-neutral-50 dark:bg-neutral-700 px-2 py-2">
 										<p className="font-bold text-neutral-800 dark:text-neutral-200">
-											{fmt(s.buildings)}
+											{schoolBuildingsCount(s)}
 										</p>
 										<p className="text-neutral-400 dark:text-neutral-500">
 											Зданий
@@ -446,11 +450,6 @@ export function SchoolTable({ schools, sort, onToggleSort }: SchoolTableProps) {
 												<StatusTag
 													label="Гос."
 													value={s.is_state}
-													tone="positive"
-												/>
-												<StatusTag
-													label="Религ."
-													value={s.is_religional}
 													tone="positive"
 												/>
 												<StatusTag
