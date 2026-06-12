@@ -6,11 +6,13 @@ from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 
 import hashlib
+import re
 import shutil
 import time
 
 from config import get_admin_settings, get_excel_path
 from parser import parse_excel
+from database.db import get_connection
 
 COOKIE_NAME = "admin_session"
 COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 дней
@@ -29,6 +31,8 @@ _last_upload_ts: int = int(time.time())
 
 @app.exception_handler(Exception)
 def unhandled_exception_handler(request: Request, exc: Exception):
+    import traceback
+    traceback.print_exception(type(exc), exc, exc.__traceback__)
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
@@ -47,8 +51,102 @@ async def admin_guard(request: Request, call_next):
     return await call_next(request)
 
 
+# def _load():
+#     return parse_excel(get_excel_path())
 def _load():
-    return parse_excel(get_excel_path())
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+        SELECT
+            s.id,
+            s.name,
+            d.name,
+            s.address,
+            s.latitude,
+            s.longitude,
+            s.students
+        FROM schools s
+        JOIN districts d
+            ON s.district_id = d.id
+        """)
+
+        rows = cur.fetchall()
+
+        schools = []
+
+        for row in rows:
+            lat = row[4]
+            lng = row[5]
+            schools.append({
+                "id": row[0],
+                "name": row[1],
+                "district": row[2],
+                "address": row[3],
+                "coords": [lat, lng] if lat is not None and lng is not None else None,
+                "students": row[6],
+                "shift": None,
+                "capacity": None,
+                "workers": None,
+                "teachers": None,
+                "site": None,
+                "is_state": False,
+                "is_religional": False,
+                "second_shift_students": None,
+                "buildings": None,
+                "renovated": False,
+                "needs_repairs": False,
+                "critical_condition": False,
+                "form": False,
+                "shkon": False,
+                "a_school_with_bias": False,
+            })
+
+        cur.execute("""
+        SELECT id, name
+        FROM districts
+        """)
+
+        districts = []
+        districts_by_key: dict[str, dict] = {}
+
+        def normalize_district_name(name: str) -> str:
+            normalized = re.sub(r"\s+", " ", name.lower()).strip()
+            normalized = normalized.replace("городской округ", "город")
+            normalized = normalized.replace("район", "р-н")
+            normalized = normalized.replace("р-н", "р-н")
+            normalized = normalized.replace("(город)", "город")
+            return normalized
+
+        def prefer_district_name(candidate: str, current: str) -> bool:
+            if "(город)" in candidate and "(город)" not in current:
+                return True
+            if "р-н" in candidate and "р-н" not in current:
+                return True
+            return False
+
+        for row in cur.fetchall():
+            district = {"id": row[0], "name": row[1]}
+            key = normalize_district_name(district["name"])
+            existing = districts_by_key.get(key)
+            if existing is None or prefer_district_name(district["name"], existing["name"]):
+                districts_by_key[key] = district
+
+        districts = list(districts_by_key.values())
+
+        cur.close()
+        conn.close()
+
+        return {
+            "districts": districts,
+            "schools": schools
+        }
+
+    except Exception as e:
+        print("DB error:", e)
+
+        return parse_excel(get_excel_path())
 
 
 def _make_token(login: str, password: str) -> str:
@@ -70,31 +168,114 @@ def health():
 @app.get("/api/districts")
 def list_districts():
     try:
-        payload = _load()
-    except FileNotFoundError:
-        return JSONResponse(status_code=503, content={"detail": "Service unavailable"})
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, name FROM districts")
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
 
-    return payload["districts"]
+        districts_by_key: dict[str, dict] = {}
+
+        def normalize(name: str) -> str:
+            n = re.sub(r"\s+", " ", name.lower()).strip()
+            n = n.replace("городской округ", "город")
+            n = n.replace("район", "р-н")
+            n = n.replace("(город)", "город")
+            return n
+
+        def prefer(candidate: str, current: str) -> bool:
+            if "(город)" in candidate and "(город)" not in current:
+                return True
+            if "р-н" in candidate and "р-н" not in current:
+                return True
+            return False
+
+        for r in rows:
+            district = {"id": int(r[0]), "name": str(r[1]) if r[1] is not None else None}
+            if district["name"] is None:
+                continue
+            key = normalize(district["name"])
+            existing = districts_by_key.get(key)
+            if existing is None or prefer(district["name"], existing["name"]):
+                districts_by_key[key] = district
+
+        districts = list(districts_by_key.values())
+        return districts
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 @app.get("/api/districts/{district_id}/schools")
 def district_detail(district_id: int):
     try:
-        payload = _load()
-    except FileNotFoundError:
-        return JSONResponse(status_code=503, content={"detail": "Service unavailable"})
+        conn = get_connection()
+        cur = conn.cursor()
 
-    district = next(
-        (d for d in payload["districts"] if d.get("id") == district_id),
-        None,
-    )
+        cur.execute("""
+        SELECT name
+        FROM districts
+        WHERE id = %s
+        """, (district_id,))
 
-    if not district:
-        return JSONResponse(status_code=404, content={"detail": "District not found"})
+        district_row = cur.fetchone()
+        if not district_row:
+            cur.close()
+            conn.close()
+            return JSONResponse(status_code=404, content={"detail": "District not found"})
 
-    schools = [s for s in payload["schools"] if s.get("district") == district.get("name")]
+        cur.execute("""
+        SELECT
+            s.id,
+            s.name,
+            d.name,
+            s.address,
+            s.latitude,
+            s.longitude,
+            s.students
+        FROM schools s
+        JOIN districts d
+            ON s.district_id = d.id
+        WHERE s.district_id = %s
+        """, (district_id,))
 
-    return schools
+        schools = []
+        for row in cur.fetchall():
+            lat = row[4]
+            lng = row[5]
+            schools.append({
+                "id": row[0],
+                "name": row[1],
+                "district": row[2],
+                "address": row[3],
+                "coords": [lat, lng] if lat is not None and lng is not None else None,
+                "students": row[6],
+                "shift": None,
+                "capacity": None,
+                "workers": None,
+                "teachers": None,
+                "site": None,
+                "is_state": False,
+                "is_religional": False,
+                "second_shift_students": None,
+                "buildings": None,
+                "renovated": False,
+                "needs_repairs": False,
+                "critical_condition": False,
+                "form": False,
+                "shkon": False,
+                "a_school_with_bias": False,
+            })
+
+        cur.close()
+        conn.close()
+
+        return schools
+    except Exception as e:
+        print("DB error:", e)
+        return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 @app.post("/api/admin/login")
@@ -181,3 +362,13 @@ def data_all():
         "districts": payload["districts"],
         "schools": payload["schools"],
     }
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "app:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True
+    )
