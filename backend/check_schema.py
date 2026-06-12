@@ -1,10 +1,9 @@
-import urllib.request
-import json
-
-r = urllib.request.urlopen('http://127.0.0.1:8000/api/districts/21/schools')
-data = json.load(r)
-print(f'count: {len(data)}')
-if data:
-    s = data[0]
-    print(f'School: {s["name"]}, coords: {s["coords"]}')
+import psycopg
+conn = psycopg.connect(host='localhost', port='5432', dbname='schools_db', user='postgres', password='Dzhabrailov07')
+cur = conn.cursor()
+cur.execute("SELECT column_name, data_type FROM information_schema.columns WHERE table_name='schools' ORDER BY ordinal_position")
+for name, dtype in cur.fetchall():
+    print(name, dtype)
+cur.close()
+conn.close()
 
