@@ -62,7 +62,6 @@ export function SchoolsManager() {
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<AdminSchool | null>(null);
 
-	// debounce поиска
 	useEffect(() => {
 		const t = setTimeout(() => {
 			setQ(searchInput.trim());
@@ -88,7 +87,6 @@ export function SchoolsManager() {
 
 	const { data, isFetching, isError } = useGetAdminSchoolsQuery(params);
 
-	// Если страница «уехала» за пределы выборки (удаление/сужение фильтром) — вернёмся к началу.
 	useEffect(() => {
 		if (data && offset > 0 && offset >= data.total) {
 			setOffset(0);
@@ -144,7 +142,6 @@ export function SchoolsManager() {
 
 	return (
 		<div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm dark:shadow-neutral-900/30">
-			{/* Toolbar */}
 			<div className="flex flex-col gap-3 border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50/60 dark:bg-neutral-800/60 p-4">
 				<div className="flex flex-wrap items-center gap-2">
 					<div className="relative min-w-0 flex-1 sm:max-w-xs">
@@ -245,7 +242,6 @@ export function SchoolsManager() {
 				)}
 			</div>
 
-			{/* Table */}
 			<div className="relative overflow-x-auto table-scroll">
 				{isFetching && (
 					<div className="absolute right-3 top-3 z-20 h-5 w-5 animate-spin rounded-full border-2 border-neutral-200 dark:border-neutral-600 border-t-blue-600" />
@@ -372,7 +368,6 @@ export function SchoolsManager() {
 				</table>
 			</div>
 
-			{/* Pagination */}
 			<div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 dark:border-neutral-700 bg-neutral-50/60 dark:bg-neutral-800/60 px-4 py-3">
 				<div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
 					<span>

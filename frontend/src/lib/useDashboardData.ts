@@ -19,7 +19,6 @@ function setCachedData(districts: District[], schools: School[]) {
 	try {
 		localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({ districts, schools }));
 	} catch {
-		// storage full — ignore
 	}
 }
 

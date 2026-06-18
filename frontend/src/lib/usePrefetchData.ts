@@ -30,7 +30,6 @@ export function usePrefetchData() {
 
         localStorage.setItem(CACHE_VERSION_KEY, String(versionResult.version));
       } catch {
-        // offline or server down — SW cache will serve stale data
       }
     }
 

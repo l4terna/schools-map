@@ -137,7 +137,6 @@ export function MapPage() {
 
 	return (
 		<div className="relative h-screen bg-neutral-100 dark:bg-neutral-800">
-			{/* Mobile warning */}
 			<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 lg:hidden">
 				<div className="w-full max-w-sm rounded-2xl bg-white dark:bg-neutral-800 p-6 text-center shadow-2xl">
 					<svg

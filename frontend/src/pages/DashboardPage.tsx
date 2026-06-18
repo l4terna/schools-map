@@ -251,7 +251,6 @@ export function DashboardPage() {
 	return (
 		<div className="flex flex-col bg-neutral-50 dark:bg-neutral-900 lg:h-screen">
 			{offlineBanner}
-			{/* Mobile top nav */}
 			<div className="mx-auto flex w-full max-w-screen-sm items-center gap-2 px-4 pt-4 md:hidden lg:mx-0 lg:max-w-none">
 				<Link
 					to="/map"
@@ -347,7 +346,6 @@ export function DashboardPage() {
 								{expanded ? "Свернуть" : "Развернуть"}
 							</button>
 						</div>
-						{/* Mobile: expandable card list */}
 						<div className="flex-1 overflow-auto table-scroll md:hidden">
 							<div className="divide-y divide-neutral-100 dark:divide-neutral-700">
 								{sorted.map((r, i) => {
@@ -508,7 +506,6 @@ export function DashboardPage() {
 								})}
 							</div>
 						</div>
-						{/* Desktop: full table */}
 						<div className="hidden flex-1 overflow-auto table-scroll md:block">
 							<table className="w-full border-collapse text-[13px]">
 								<thead className="sticky top-0 z-10">
@@ -867,7 +864,6 @@ export function DashboardPage() {
 
 						{tab === "republic" ? (
 							<div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm dark:shadow-neutral-900/30">
-								{/* Desktop: table layout */}
 								<table className="hidden w-full border-collapse sm:table">
 									<tbody>
 										<tr className="border-b border-neutral-100 dark:border-neutral-700">
@@ -933,7 +929,6 @@ export function DashboardPage() {
 										</tr>
 									</tbody>
 								</table>
-								{/* Mobile: grid layout */}
 								<div className="grid grid-cols-2 gap-2 sm:hidden">
 									<BigStat
 										label="Заполненность школ"

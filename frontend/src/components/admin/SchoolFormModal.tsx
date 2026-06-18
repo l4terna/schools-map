@@ -6,9 +6,10 @@ import {
 } from "@/store/api/schoolsApi";
 import type { AdminSchool, AdminDistrict, SchoolInput } from "@/types";
 import { CoordPicker } from "./CoordPicker";
+import { toast } from "@/lib/toast";
 
 interface Props {
-	school: AdminSchool | null; // null => создание
+	school: AdminSchool | null;
 	districts: AdminDistrict[];
 	onClose: () => void;
 }
@@ -205,23 +206,29 @@ export function SchoolFormModal({ school, districts, onClose }: Props) {
 		try {
 			if (isEdit && school) {
 				await updateSchool({ id: school.id, body: payload }).unwrap();
+				toast.success("Изменения сохранены");
 			} else {
 				await createSchool(payload).unwrap();
+				toast.success("Школа добавлена");
 			}
 			onClose();
 		} catch {
 			setError("Не удалось сохранить. Проверьте введённые данные.");
+			toast.error("Не удалось сохранить школу");
 		}
 	}
 
 	async function handleDelete() {
 		if (!school) return;
 		setError(null);
+		const name = school.name?.trim();
 		try {
 			await deleteSchool(school.id).unwrap();
+			toast.success(name ? `Школа «${name}» удалена` : "Школа удалена");
 			onClose();
 		} catch {
 			setError("Не удалось удалить школу.");
+			toast.error("Не удалось удалить школу");
 		}
 	}
 
@@ -234,7 +241,6 @@ export function SchoolFormModal({ school, districts, onClose }: Props) {
 				className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white dark:bg-neutral-800 shadow-2xl sm:rounded-2xl"
 				onClick={(e) => e.stopPropagation()}
 			>
-				{/* Header */}
 				<div className="flex shrink-0 items-center justify-between border-b border-neutral-100 dark:border-neutral-700 px-5 py-4">
 					<h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100 sm:text-lg">
 						{isEdit ? "Редактирование школы" : "Новая школа"}
@@ -255,7 +261,6 @@ export function SchoolFormModal({ school, districts, onClose }: Props) {
 					</button>
 				</div>
 
-				{/* Body */}
 				<form
 					id="school-form"
 					onSubmit={handleSubmit}
@@ -396,7 +401,6 @@ export function SchoolFormModal({ school, districts, onClose }: Props) {
 					)}
 				</form>
 
-				{/* Footer */}
 				<div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-neutral-100 dark:border-neutral-700 px-5 py-4">
 					{isEdit &&
 						(confirmDelete ? (

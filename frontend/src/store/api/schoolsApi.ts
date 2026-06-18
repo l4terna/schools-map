@@ -11,7 +11,6 @@ import type {
 	SchoolInput,
 } from "@/types";
 
-/** Убираем undefined/пустые значения, чтобы не слать лишние query-параметры. */
 function cleanParams(params: Record<string, unknown>): Record<string, unknown> {
 	const out: Record<string, unknown> = {};
 	for (const [key, value] of Object.entries(params)) {
@@ -90,7 +89,6 @@ export const schoolsApi = createApi({
 			],
 		}),
 
-		// ── Админка: управление школами ──────────────────────────────
 
 		getAdminStats: builder.query<AdminStats, void>({
 			query: () => "/admin/stats",

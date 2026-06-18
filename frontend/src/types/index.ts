@@ -34,7 +34,6 @@ export interface LoginPayload {
   password: string;
 }
 
-/** Школа в админке — это School + числовой id. */
 export interface AdminSchool extends School {
   id: number;
 }
@@ -76,7 +75,6 @@ export type SchoolSortKey =
   | "workers"
   | "teachers";
 
-/** Булевы фильтры таблицы школ (tri-state: undefined = «все»). */
 export interface SchoolBoolFilters {
   is_state?: boolean;
   is_religional?: boolean;
@@ -98,7 +96,6 @@ export interface AdminSchoolsParams extends SchoolBoolFilters {
   order?: "asc" | "desc";
 }
 
-/** Тело запроса для создания/обновления школы. */
 export interface SchoolInput {
   name?: string | null;
   district?: string | null;

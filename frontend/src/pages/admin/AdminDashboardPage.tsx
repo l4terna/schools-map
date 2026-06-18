@@ -8,6 +8,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { AdminStats } from "@/components/admin/AdminStats";
 import { SchoolsManager } from "@/components/admin/SchoolsManager";
+import { toast } from "@/lib/toast";
 
 type Tab = "schools" | "data";
 
@@ -60,13 +61,17 @@ export function AdminDashboardPage() {
 		fd.append("file", file);
 
 		try {
-			await upload(fd).unwrap();
+			const res = await upload(fd).unwrap();
 			setUploadResult({ ok: true, message: "Файл загружен и записан в БД" });
+			toast.success(
+				`Импортировано: ${res.schools} школ, ${res.districts} районов`,
+			);
 		} catch {
 			setUploadResult({
 				ok: false,
 				message: "Не удалось загрузить файл. Проверьте формат (.xlsx)",
 			});
+			toast.error("Не удалось загрузить файл. Проверьте формат (.xlsx)");
 		}
 
 		if (fileRef.current) fileRef.current.value = "";

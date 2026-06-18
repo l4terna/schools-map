@@ -16,7 +16,6 @@ function flipRing(ring: number[][]): number[][] {
 	return ring.map((p) => [p[1]!, p[0]!]);
 }
 
-/** Затемняет всё вне границ Чечни и рисует белый контур — как на главной карте. */
 function drawRepublicMask(ymaps: any, map: any) {
 	try {
 		const geom = JSON.parse(republicBorderJSON);
@@ -66,7 +65,6 @@ export function CoordPicker({ lat, lng, onChange, onClear }: Props) {
 
 	const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
-	// Изначальные координаты — фиксируем на момент монтирования (модалка пересоздаётся при каждом открытии).
 	const initialRef = useRef<{ lat: number | null; lng: number | null }>({
 		lat,
 		lng,
@@ -100,7 +98,6 @@ export function CoordPicker({ lat, lng, onChange, onClear }: Props) {
 		placemarkRef.current = null;
 	}
 
-	// Инициализация карты — один раз.
 	useEffect(() => {
 		let destroyed = false;
 
@@ -148,7 +145,6 @@ export function CoordPicker({ lat, lng, onChange, onClear }: Props) {
 		};
 	}, []);
 
-	// Синхронизация метки с внешними значениями (ручной ввод в полях).
 	useEffect(() => {
 		if (status !== "ready") return;
 		if (lat == null || lng == null) {
