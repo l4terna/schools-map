@@ -52,6 +52,28 @@ export const schoolsApi = createApi({
 			}),
 			invalidatesTags: ["Districts", "Schools", "Data"],
 		}),
+
+		getDbStatus: builder.query<
+			{ connected: boolean; districts: number; schools: number; details: number },
+			void
+		>({
+			query: () => "/admin/db/status",
+			providesTags: ["Data"],
+		}),
+
+		importExcel: builder.mutation<{ status: string }, FormData>({
+			query: (formData) => ({
+				url: "/admin/import/excel",
+				method: "POST",
+				body: formData,
+			}),
+			invalidatesTags: ["Districts", "Schools", "Data"],
+		}),
+
+		clearDb: builder.mutation<{ status: string }, void>({
+			query: () => ({ url: "/admin/db/clear", method: "POST" }),
+			invalidatesTags: ["Districts", "Schools", "Data"],
+		}),
 	}),
 });
 
@@ -64,4 +86,7 @@ export const {
 	useLogoutMutation,
 	useCheckDataExistsQuery,
 	useUploadDataMutation,
+	useGetDbStatusQuery,
+	useImportExcelMutation,
+	useClearDbMutation,
 } = schoolsApi;

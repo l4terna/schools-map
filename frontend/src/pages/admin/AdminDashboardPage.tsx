@@ -1,14 +1,18 @@
 import { type ChangeEvent, type DragEvent, useRef, useState } from "react";
 import {
 	useCheckDataExistsQuery,
-	useUploadDataMutation,
 	useLogoutMutation,
+	useGetDbStatusQuery,
+	useImportExcelMutation,
+	useClearDbMutation,
+	useUploadDataMutation,
 } from "@/store/api/schoolsApi";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export function AdminDashboardPage() {
 	const fileRef = useRef<HTMLInputElement>(null);
+	const fallbackFileRef = useRef<HTMLInputElement>(null);
 	const navigate = useNavigate();
 
 	const {
@@ -17,11 +21,24 @@ export function AdminDashboardPage() {
 		error: authError,
 	} = useCheckDataExistsQuery();
 
-	const [upload, { isLoading: uploading }] = useUploadDataMutation();
+	const {
+		data: dbStatus,
+		isLoading: checkingDb,
+		error: dbError,
+	} = useGetDbStatusQuery();
+
+	const [importExcel, { isLoading: importing }] = useImportExcelMutation();
+	const [clearDb, { isLoading: clearing }] = useClearDbMutation();
+	const [uploadFallbackExcel, { isLoading: uploadingFallback }] =
+		useUploadDataMutation();
 	const [logout] = useLogoutMutation();
 
 	const [dragging, setDragging] = useState(false);
 	const [uploadResult, setUploadResult] = useState<{
+		ok: boolean;
+		message: string;
+	} | null>(null);
+	const [dbResult, setDbResult] = useState<{
 		ok: boolean;
 		message: string;
 	} | null>(null);
@@ -51,25 +68,125 @@ export function AdminDashboardPage() {
 		}
 
 		setUploadResult(null);
+		setDbResult(null);
 		const fd = new FormData();
 		fd.append("file", file);
 
 		try {
-			await upload(fd).unwrap();
-			setUploadResult({ ok: true, message: "Файл успешно загружен" });
-		} catch {
-			setUploadResult({
+			await importExcel(fd).unwrap();
+			setDbResult({
+				ok: true,
+				message: "Файл успешно импортирован в базу",
+			});
+		} catch (error) {
+			console.error(error);
+			setDbResult({
 				ok: false,
-				message: "Не удалось загрузить файл. Проверьте формат (.xlsx)",
+				message:
+					"Не удалось импортировать файл в базу. Проверьте формат (.xlsx)",
 			});
 		}
 
 		if (fileRef.current) fileRef.current.value = "";
 	}
 
+	async function uploadFallbackFile(file: File) {
+		if (!file.name.toLowerCase().endsWith(".xlsx")) {
+			setUploadResult({
+				ok: false,
+				message: "Только .xlsx файлы",
+			});
+			return;
+		}
+
+		setUploadResult(null);
+		setDbResult(null);
+		const fd = new FormData();
+		fd.append("file", file);
+
+		try {
+			await uploadFallbackExcel(fd).unwrap();
+			setUploadResult({
+				ok: true,
+				message: "Fallback Excel успешно обновлен",
+			});
+		} catch (error) {
+			console.error(error);
+			setUploadResult({
+				ok: false,
+				message: "Не удалось обновить fallback Excel",
+			});
+		}
+
+		if (fallbackFileRef.current) fallbackFileRef.current.value = "";
+	}
+
+	async function handleExport() {
+		setDbResult(null);
+
+		try {
+			const response = await fetch("/api/admin/export/excel", {
+				method: "GET",
+				credentials: "include",
+			});
+
+			if (!response.ok) {
+				throw new Error("Ошибка экспорта Excel");
+			}
+
+			const blob = await response.blob();
+			const url = window.URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = "schools_db_export.xlsx";
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			window.URL.revokeObjectURL(url);
+			setDbResult({ ok: true, message: "Экспорт выполнен" });
+		} catch (error) {
+			console.error(error);
+			setDbResult({
+				ok: false,
+				message: "Не удалось экспортировать данные из базы",
+			});
+		}
+	}
+
+	async function handleClear() {
+		if (
+			!window.confirm(
+				"Очистить базу данных? Это действие необратимо.",
+			)
+		) {
+			return;
+		}
+
+		setDbResult(null);
+
+		try {
+			await clearDb().unwrap();
+			setDbResult({
+				ok: true,
+				message: "База данных успешно очищена",
+			});
+		} catch (error) {
+			console.error(error);
+			setDbResult({
+				ok: false,
+				message: "Не удалось очистить базу данных",
+			});
+		}
+	}
+
 	function handleFileInput(e: ChangeEvent<HTMLInputElement>) {
 		const file = e.target.files?.[0];
 		if (file) doUpload(file);
+	}
+
+	function handleFallbackFileInput(e: ChangeEvent<HTMLInputElement>) {
+		const file = e.target.files?.[0];
+		if (file) uploadFallbackFile(file);
 	}
 
 	function handleDragOver(e: DragEvent) {
@@ -124,13 +241,86 @@ export function AdminDashboardPage() {
 
 				<section className="mt-6 rounded-2xl bg-white dark:bg-neutral-800 p-4 shadow-lg dark:shadow-neutral-900/40 sm:mt-8 sm:p-6">
 					<h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+						Состояние базы данных
+					</h2>
+
+					{checkingDb ? (
+						<div className="mt-4 flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+							<div className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-200 dark:border-neutral-700 border-t-blue-600" />
+							Проверка связи с базой...
+						</div>
+					) : dbError ? (
+						<p className="mt-4 text-sm font-medium text-red-600">
+							Не удалось получить статус базы данных.
+						</p>
+					) : (
+						<div className="mt-4 grid gap-3 sm:grid-cols-3">
+							<div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-4">
+								<p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-400">
+									Подключение
+								</p>
+								<p className="mt-2 text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+									{dbStatus?.connected ? "Да" : "Нет"}
+								</p>
+							</div>
+							<div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-4">
+								<p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-400">
+									Районов
+								</p>
+								<p className="mt-2 text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+									{dbStatus?.districts ?? 0}
+								</p>
+							</div>
+							<div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-4">
+								<p className="text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-400">
+									Школ
+								</p>
+								<p className="mt-2 text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+									{dbStatus?.schools ?? 0}
+								</p>
+							</div>
+						</div>
+					)}
+
+					<div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+						<button
+							onClick={handleExport}
+							disabled={checkingDb}
+							className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+						>
+							Экспорт в Excel
+						</button>
+						<button
+							onClick={handleClear}
+							disabled={clearing || checkingDb}
+							className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-500/20 dark:bg-neutral-900 dark:text-red-300 dark:hover:bg-red-950"
+						>
+							Очистить базу
+						</button>
+					</div>
+
+					{dbResult && (
+						<p
+							className={`mt-4 text-sm font-medium ${
+								dbResult.ok ? "text-green-600" : "text-red-500"
+							}`}
+						>
+							{dbResult.message}
+						</p>
+					)}
+				</section>
+
+				<section className="mt-6 rounded-2xl bg-white dark:bg-neutral-800 p-4 shadow-lg dark:shadow-neutral-900/40 sm:mt-8 sm:p-6">
+					<h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
 						Данные (Excel)
 					</h2>
 
 					<p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
 						Статус:{" "}
 						{dataStatus?.exists ? (
-							<span className="font-medium text-green-600">файл загружен</span>
+							<span className="font-medium text-green-600">
+								файл загружен
+							</span>
 						) : (
 							<span className="font-medium text-amber-600">
 								файл отсутствует
@@ -149,7 +339,7 @@ export function AdminDashboardPage() {
 						}`}
 					>
 						<div className="text-3xl text-neutral-300 dark:text-neutral-600">
-							{uploading ? (
+							{importing ? (
 								<div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 dark:border-neutral-600 border-t-blue-600" />
 							) : (
 								<svg
@@ -170,7 +360,9 @@ export function AdminDashboardPage() {
 							)}
 						</div>
 						<p className="mt-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-							{uploading ? "Загрузка..." : "Перетащите .xlsx сюда или нажмите"}
+							{importing
+								? "Загрузка..."
+								: "Перетащите .xlsx сюда или нажмите"}
 						</p>
 						<p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
 							Поддерживается только формат .xlsx
@@ -181,98 +373,137 @@ export function AdminDashboardPage() {
 							accept=".xlsx"
 							onChange={handleFileInput}
 							className="hidden"
-							disabled={uploading}
+							disabled={importing}
 						/>
 					</label>
 
 					{uploadResult && (
 						<p
-							className={`mt-4 text-sm font-medium ${uploadResult.ok ? "text-green-600" : "text-red-500"}`}
+							className={`mt-4 text-sm font-medium ${
+								uploadResult.ok ? "text-green-600" : "text-red-500"
+							}`}
 						>
 							{uploadResult.message}
 						</p>
 					)}
 
-					{dataStatus?.exists && (
-						<a
-							href="/api/admin/data/download"
-							className="mt-4 inline-block rounded-lg border border-neutral-300 dark:border-neutral-600 px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 transition hover:bg-neutral-50 dark:hover:bg-neutral-700"
-						>
-							Скачать текущий файл
-						</a>
-					)}
+					<div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+						{dataStatus?.exists && (
+							<a
+								href="/api/admin/data/download"
+								className="inline-flex items-center justify-center rounded-lg border border-neutral-300 dark:border-neutral-600 px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 transition hover:bg-neutral-50 dark:hover:bg-neutral-700"
+							>
+								Скачать текущий файл
+							</a>
+						)}
+						<label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-100 dark:hover:bg-amber-900/40">
+							{uploadingFallback
+								? "Загрузка fallback..."
+								: "Загрузить fallback Excel"}
+							<input
+								ref={fallbackFileRef}
+								type="file"
+								accept=".xlsx"
+								onChange={handleFallbackFileInput}
+								className="hidden"
+								disabled={uploadingFallback}
+							/>
+						</label>
+					</div>
 				</section>
 
 				<section className="mt-4 rounded-2xl bg-white dark:bg-neutral-800 p-4 shadow-lg dark:shadow-neutral-900/40 sm:mt-6 sm:p-6">
 					<h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100 sm:text-lg">
-						Инструкция по заполнению Excel
+						Инструкция по импорту Excel в PostgreSQL
 					</h2>
 
 					<p className="mt-3 text-sm text-neutral-600 dark:text-neutral-400">
-						Файл должен быть в формате <strong>.xlsx</strong>. Первая строка —
-						заголовки столбцов (произвольные, парсер ориентируется по порядку
-						колонок). Данные начинаются со второй строки.
+						Проект сейчас хранит рабочие данные в PostgreSQL. Excel оставлен как
+						формат обмена, резервного копирования и аварийного чтения данных при
+						сбое подключения к SQL. Зона загрузки выше импортирует файл именно в
+						базу данных.
 					</p>
+
+					<div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-100">
+						<strong>Важно:</strong> импорт полностью заменяет текущие записи в
+						таблицах PostgreSQL данными из загруженного файла. Перед импортом
+						сделайте резервную копию через кнопку <strong>Экспорт в Excel</strong>.
+					</div>
+
+					<div className="mt-5 space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
+						<h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+							Как подготовить файл
+						</h3>
+						<ol className="list-inside list-decimal space-y-1.5 pl-1">
+							<li>
+								Нажмите <strong>Экспорт в Excel</strong>.
+							</li>
+							<li>
+								Откройте скачанный файл{" "}
+								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5 text-xs">
+									schools_db_export.xlsx
+								</code>
+								.
+							</li>
+							<li>Отредактируйте нужные данные на вкладках файла.</li>
+							<li>
+								Загрузите этот же файл в зону{" "}
+								<strong>Перетащите .xlsx сюда или нажмите</strong>.
+							</li>
+						</ol>
+					</div>
 
 					<div className="mt-5">
 						<h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-							Основной формат (22 колонки, A–V)
+							Обязательные листы и колонки
 						</h3>
 						<div className="mt-2 overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
 							<table className="w-full text-left text-xs">
 								<thead className="bg-neutral-50 dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400">
 									<tr>
 										<th className="whitespace-nowrap px-3 py-2 font-medium">
-											№
+											Лист
 										</th>
 										<th className="whitespace-nowrap px-3 py-2 font-medium">
-											Колонка
+											Назначение
 										</th>
 										<th className="whitespace-nowrap px-3 py-2 font-medium">
-											Тип
-										</th>
-										<th className="whitespace-nowrap px-3 py-2 font-medium">
-											Пример
+											Колонки
 										</th>
 									</tr>
 								</thead>
 								<tbody className="divide-y divide-neutral-100 dark:divide-neutral-700 text-neutral-700 dark:text-neutral-300">
 									{[
-										["A", "Порядковый номер", "Число", "1"],
-										["B", "Название школы", "Текст", "СОШ №1 г. Грозный"],
-										["C", "Смена", "Число", "2"],
-										["D", "Мощность (мест)", "Число", "500"],
-										["E", "Кол-во учащихся", "Число", "430"],
-										["F", "Кол-во работников", "Число", "60"],
-										["G", "Кол-во учителей", "Число", "35"],
-										["H", "Сайт школы", "Текст/URL", "school1.edu"],
-										["I", "Широта", "Число", "43.3175"],
-										["J", "Долгота", "Число", "45.6940"],
-										["K", "Адрес", "Текст", "ул. Ленина, 1"],
-										["L", "Район/Департамент", "Текст", "Грозный (город)"],
-										["M", "Государственная", "Да/Нет", "Да"],
-										["N", "Религиозная", "Да/Нет", "Нет"],
-										["O", "Кол-во зданий", "Число, пусто = 1", "3"],
-										["P", "Отремонтирована", "Год/текст или Нет", "2021"],
-										["Q", "Требует ремонта", "Год/текст или Нет", "требует"],
-										["R", "Аварийное состояние", "Да/Нет", "Нет"],
-										["S", "Обуч. во 2 смену", "Число, пусто при смене 2 = Н/Д", "244"],
-										["T", "Строится", "Да/Нет", "Да"],
-										["U", "ШНОР", "Да/Нет", "Да"],
-										["V", "Школа с необъективностью", "Да/Нет", "Нет"],
-									].map(([col, name, type, example]) => (
-										<tr key={col}>
-											<td className="whitespace-nowrap px-3 py-1.5 font-mono text-neutral-400 dark:text-neutral-500">
-												{col}
+										[
+											"Republic",
+											"общая запись по республике",
+											"id, name, total_students, total_schools",
+										],
+										[
+											"Districts",
+											"районы и связь с республикой",
+											"id, name, republic_id",
+										],
+										[
+											"Schools",
+											"основные данные школ",
+											"id, name, district_id, address, coords, capacity, students, latitude, longitude",
+										],
+										[
+											"School Details",
+											"дополнительные параметры школ",
+											"id, school_id, shift, second_shift_students, workers, teachers, site, is_state, is_religious, buildings, needs_repairs, critical_condition, renovated, shnor, a_school_with_bias, shkon, form",
+										],
+									].map(([sheet, purpose, columns]) => (
+										<tr key={sheet}>
+											<td className="whitespace-nowrap px-3 py-1.5 font-mono text-neutral-500 dark:text-neutral-400">
+												{sheet}
 											</td>
-											<td className="whitespace-nowrap px-3 py-1.5 font-medium">
-												{name}
+											<td className="whitespace-nowrap px-3 py-1.5">
+												{purpose}
 											</td>
-											<td className="whitespace-nowrap px-3 py-1.5 text-neutral-500 dark:text-neutral-400">
-												{type}
-											</td>
-											<td className="whitespace-nowrap px-3 py-1.5 text-neutral-400 dark:text-neutral-500">
-												{example}
+											<td className="min-w-[360px] px-3 py-1.5 font-mono text-neutral-500 dark:text-neutral-400">
+												{columns}
 											</td>
 										</tr>
 									))}
@@ -283,58 +514,34 @@ export function AdminDashboardPage() {
 
 					<div className="mt-5 space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
 						<h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-							Когда строка загружается
-						</h3>
-						<p>
-							Строка попадает в систему, если заполнено{" "}
-							<strong>хотя бы одно</strong> из двух полей:{" "}
-							<strong>район</strong> (L) или <strong>координаты</strong> (I +
-							J). Если оба поля пустые — строка пропускается. Все остальные поля
-							необязательны и могут быть пустыми.
-						</p>
-					</div>
-
-					<div className="mt-5 space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
-						<h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-							Правила заполнения
+							Чем отличаются кнопки
 						</h3>
 						<ul className="list-inside list-disc space-y-1.5 pl-1">
 							<li>
-								Колонка <strong>«Район/Департамент»</strong> (L) должна точно
-								совпадать с одним из известных названий районов (например,{" "}
+								<strong>Экспорт в Excel</strong> берет данные из PostgreSQL и
+								создает файл в формате, который подходит для обратного импорта.
+							</li>
+							<li>
+								<strong>Скачать текущий файл</strong> скачивает файл
 								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5 text-xs">
-									Грозный (город)
+									{" "}
+									backend/database/data.xlsx
 								</code>
-								). Районы создаются автоматически на основе этого поля.
+								. Этот файл нужен для старого Excel-сценария и аварийного
+								fallback, но он может не совпадать с текущим состоянием SQL.
 							</li>
 							<li>
-								<strong>Координаты</strong> (I, J) — десятичные числа (например,{" "}
+								<strong>Загрузить fallback Excel</strong> заменяет только файл
 								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5 text-xs">
-									43.3175
+									{" "}
+									backend/database/data.xlsx
 								</code>
-								). Нужны обе колонки для отображения школы на карте. Если
-								координат нет — школа появится в списке, но не на карте.
+								. PostgreSQL при этом не изменяется.
 							</li>
 							<li>
-								Поля типа <strong>Да/Нет</strong> (M, N, P–R, T–V) принимают:{" "}
-								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5 text-xs">
-									Да
-								</code>
-								,{" "}
-								<code className="rounded bg-neutral-100 dark:bg-neutral-700 px-1 py-0.5 text-xs">
-									Нет
-								</code>{" "}
-								(или пусто = Нет).
-							</li>
-							<li>Пустые числовые поля (C–G, O, S) отобразятся как «—».</li>
-							<li>
-								Название школы (B) может быть пустым — строка всё равно
-								загрузится, если указан район или координаты.
-							</li>
-							<li>
-								Статистика по районам (учащиеся, работники, учителя)
-								рассчитывается <strong>автоматически</strong> как сумма по
-								школам.
+								Старый формат с одной широкой таблицей A-V не является форматом
+								этого SQL-импорта. Для загрузки в базу используйте файл с 4
+								листами, полученный через <strong>Экспорт в Excel</strong>.
 							</li>
 						</ul>
 					</div>

@@ -2,17 +2,21 @@ from __future__ import annotations
 
 from fastapi import FastAPI, UploadFile, File, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from pydantic import BaseModel
 
+from io import BytesIO
 import hashlib
 import re
 import shutil
 import time
 
-from config import get_admin_settings, get_excel_path
-from parser import parse_excel
-from database.db import get_connection
+from .config import get_admin_settings, get_excel_path
+from .parser import parse_excel
+from .database.db import get_connection, get_connection_params
+from .services.db_service import DatabaseService, DBValidationError
+from .services.sync_service import SyncService
+from .services.excel_service import ExcelValidationError
 
 COOKIE_NAME = "admin_session"
 COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 дней
@@ -27,6 +31,10 @@ app.add_middleware(
 )
 
 _last_upload_ts: int = int(time.time())
+
+connection_params = get_connection_params()
+db_service = DatabaseService(connection_params)
+sync_service = SyncService(db_service)
 
 
 @app.exception_handler(Exception)
@@ -340,6 +348,65 @@ def download_excel():
 @app.get("/api/admin/data/exists")
 def excel_exists():
     return {"exists": get_excel_path().exists()}
+
+
+@app.get("/api/admin/db/status")
+def db_status():
+    return sync_service.get_db_status()
+
+
+@app.post("/api/admin/db/clear")
+def clear_db():
+    try:
+        sync_service.clear_database()
+        return {"status": "ok"}
+    except Exception as exc:
+        return JSONResponse(status_code=500, content={"detail": str(exc)})
+
+
+@app.post("/api/admin/import/excel")
+def import_excel(file: UploadFile = File(...)):
+    if not file.filename.lower().endswith(".xlsx"):
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "Only .xlsx files are supported"},
+        )
+
+    excel_path = get_excel_path()
+    tmp_path = excel_path.with_name(f"{excel_path.name}.import.tmp")
+    with open(tmp_path, "wb") as out_file:
+        shutil.copyfileobj(file.file, out_file)
+
+    try:
+        sync_service.import_excel_to_db(str(tmp_path))
+    except ExcelValidationError as exc:
+        return JSONResponse(status_code=400, content={"detail": str(exc)})
+    except DBValidationError as exc:
+        return JSONResponse(status_code=400, content={"detail": str(exc)})
+    except Exception as exc:
+        return JSONResponse(status_code=500, content={"detail": str(exc)})
+    finally:
+        if tmp_path.exists():
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+
+    return {"status": "ok"}
+
+
+@app.get("/api/admin/export/excel")
+def export_excel():
+    try:
+        excel_bytes = sync_service.export_db_to_excel()
+    except Exception as exc:
+        return JSONResponse(status_code=500, content={"detail": str(exc)})
+
+    return StreamingResponse(
+        content=BytesIO(excel_bytes),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=schools_db_export.xlsx"},
+    )
 
 
 @app.get("/api/data/version")
