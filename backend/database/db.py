@@ -1,7 +1,6 @@
-import psycopg
-
-
 def get_connection():
+    import psycopg
+
     return psycopg.connect(
         host="localhost",
         port="5432",

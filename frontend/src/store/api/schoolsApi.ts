@@ -1,5 +1,25 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { District, School, LoginPayload } from "@/types";
+import type {
+	District,
+	School,
+	LoginPayload,
+	AdminStats,
+	AdminDistrict,
+	AdminSchool,
+	AdminSchoolsResponse,
+	AdminSchoolsParams,
+	SchoolInput,
+} from "@/types";
+
+/** Убираем undefined/пустые значения, чтобы не слать лишние query-параметры. */
+function cleanParams(params: Record<string, unknown>): Record<string, unknown> {
+	const out: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(params)) {
+		if (value === undefined || value === null || value === "") continue;
+		out[key] = value;
+	}
+	return out;
+}
 
 export const schoolsApi = createApi({
 	reducerPath: "schoolsApi",
@@ -7,7 +27,14 @@ export const schoolsApi = createApi({
 		baseUrl: `${import.meta.env.VITE_API || ""}/api`,
 		credentials: "include",
 	}),
-	tagTypes: ["Districts", "Schools", "Data"],
+	tagTypes: [
+		"Districts",
+		"Schools",
+		"Data",
+		"AdminSchools",
+		"AdminStats",
+		"AdminDistricts",
+	],
 	endpoints: (builder) => ({
 		getDistricts: builder.query<District[], void>({
 			query: () => "/districts",
@@ -44,13 +71,98 @@ export const schoolsApi = createApi({
 			providesTags: ["Data"],
 		}),
 
-		uploadData: builder.mutation<{ status: string }, FormData>({
+		uploadData: builder.mutation<
+			{ status: string; districts: number; schools: number },
+			FormData
+		>({
 			query: (formData) => ({
 				url: "/admin/data/upload",
 				method: "POST",
 				body: formData,
 			}),
-			invalidatesTags: ["Districts", "Schools", "Data"],
+			invalidatesTags: [
+				"Districts",
+				"Schools",
+				"Data",
+				"AdminSchools",
+				"AdminStats",
+				"AdminDistricts",
+			],
+		}),
+
+		// ── Админка: управление школами ──────────────────────────────
+
+		getAdminStats: builder.query<AdminStats, void>({
+			query: () => "/admin/stats",
+			providesTags: ["AdminStats"],
+		}),
+
+		getAdminDistricts: builder.query<AdminDistrict[], void>({
+			query: () => "/admin/districts",
+			providesTags: ["AdminDistricts"],
+		}),
+
+		getAdminSchools: builder.query<AdminSchoolsResponse, AdminSchoolsParams>({
+			query: (params) => ({
+				url: "/admin/schools",
+				params: cleanParams({ ...params }),
+			}),
+			providesTags: (res) =>
+				res
+					? [
+							...res.items.map((s) => ({
+								type: "AdminSchools" as const,
+								id: s.id,
+							})),
+							{ type: "AdminSchools" as const, id: "LIST" },
+						]
+					: [{ type: "AdminSchools" as const, id: "LIST" }],
+		}),
+
+		getAdminSchool: builder.query<AdminSchool, number>({
+			query: (id) => `/admin/schools/${id}`,
+			providesTags: (_res, _err, id) => [{ type: "AdminSchools", id }],
+		}),
+
+		createSchool: builder.mutation<AdminSchool, SchoolInput>({
+			query: (body) => ({ url: "/admin/schools", method: "POST", body }),
+			invalidatesTags: [
+				{ type: "AdminSchools", id: "LIST" },
+				"AdminStats",
+				"AdminDistricts",
+				"Districts",
+				"Schools",
+			],
+		}),
+
+		updateSchool: builder.mutation<
+			AdminSchool,
+			{ id: number; body: SchoolInput }
+		>({
+			query: ({ id, body }) => ({
+				url: `/admin/schools/${id}`,
+				method: "PATCH",
+				body,
+			}),
+			invalidatesTags: (_res, _err, { id }) => [
+				{ type: "AdminSchools", id },
+				{ type: "AdminSchools", id: "LIST" },
+				"AdminStats",
+				"AdminDistricts",
+				"Districts",
+				"Schools",
+			],
+		}),
+
+		deleteSchool: builder.mutation<{ status: string; id: number }, number>({
+			query: (id) => ({ url: `/admin/schools/${id}`, method: "DELETE" }),
+			invalidatesTags: [
+				{ type: "AdminSchools", id: "LIST" },
+				"AdminStats",
+				"AdminDistricts",
+				"Districts",
+				"Schools",
+			],
 		}),
 	}),
 });
@@ -64,4 +176,11 @@ export const {
 	useLogoutMutation,
 	useCheckDataExistsQuery,
 	useUploadDataMutation,
+	useGetAdminStatsQuery,
+	useGetAdminDistrictsQuery,
+	useGetAdminSchoolsQuery,
+	useGetAdminSchoolQuery,
+	useCreateSchoolMutation,
+	useUpdateSchoolMutation,
+	useDeleteSchoolMutation,
 } = schoolsApi;
